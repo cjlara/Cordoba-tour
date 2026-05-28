@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="Visita guiada interactiva por Córdoba con audioguías, mapa y gastronomía">
+<title>Córdoba · Visita Guiada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --gold: #C9A84C;
+  --gold2: #E8C97A;
+  --ivory: #F5EFE0;
+  --parch: #EDE3C8;
+  --terra: #B5541B;
+  --ink: #0D1117;
+  --card: #131920;
+  --smoke: #1E2535;
+  --border: rgba(201,168,76,0.18);
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --display: 'Playfair Display', Georgia, serif;
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--ink);
+  color: var(--ivory);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: var(--serif); cursor: pointer; }
+img { display: block; max-width: 100%; }
+
+/* ── PROGRESS ─────────────────────────────────────────────────────────────── */
+#progress-bar {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 500;
+  background: rgba(201,168,76,0.12);
+}
+#progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--terra), var(--gold));
+  transition: width 0.25s ease;
+}
+
+/* ── HEADER ───────────────────────────────────────────────────────────────── */
+#site-header {
+  position: fixed; top: 2px; left: 0; right: 0; z-index: 400;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  background: linear-gradient(to bottom, rgba(13,17,23,0.98) 75%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.brand {
+  font-family: var(--display); font-size: 1.25rem;
+  color: var(--gold); letter-spacing: 0.06em;
+}
+.brand span { color: var(--ivory); font-style: italic; font-weight: 400; }
+#current-stop {
+  font-size: 0.78rem; letter-spacing: 0.18em;
+  color: var(--gold2); opacity: 0.8; text-transform: uppercase;
+}
+
+/* ── SIDE NAV DOTS ────────────────────────────────────────────────────────── */
+#side-nav {
+  position: fixed; left: 1.4rem; top: 50%;
+  transform: translateY(-50%); z-index: 300;
+  display: flex; flex-direction: column; gap: 0.55rem;
+}
+.nav-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1px solid var(--gold); background: transparent;
+  cursor: pointer; transition: all 0.3s; position: relative;
+  padding: 0;
+}
+.nav-dot.active { background: var(--gold); transform: scale(1.5); }
+.nav-dot:hover::after {
+  content: attr(data-label);
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  white-space: nowrap; font-family: var(--serif); font-size: 0.72rem;
+  color: var(--gold); background: rgba(13,17,23,0.96);
+  padding: 0.2rem 0.65rem; border: 1px solid var(--border);
+  pointer-events: none; letter-spacing: 0.08em;
+}
+@media (max-width: 700px) { #side-nav { display: none; } }
+
+/* ── HERO ─────────────────────────────────────────────────────────────────── */
+#hero {
+  min-height: 100vh; position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; overflow: hidden;
+}
+#hero-bg {
+  position: absolute; inset: 0;
+  background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Cordoba_mezquita_kathedrale_nacht.jpg/1280px-Cordoba_mezquita_kathedrale_nacht.jpg')
+    center / cover no-repeat;
+  filter: brightness(0.28) saturate(0.7);
+  transform: scale(1.04);
+  animation: slowzoom 20s ease-in-out infinite alternate;
+}
+@keyframes slowzoom { from { transform: scale(1.04); } to { transform: scale(1.12); } }
+#hero-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, var(--ink) 100%);
+}
+#hero-content { position: relative; z-index: 2; padding: 2rem 1.5rem; max-width: 680px; }
+.eyebrow {
+  font-size: 0.72rem; letter-spacing: 0.55em; color: var(--gold);
+  text-transform: uppercase; margin-bottom: 1.2rem;
+  opacity: 0; animation: fadeup 1s 0.4s ease forwards;
+}
+.hero-title {
+  font-family: var(--display); font-size: clamp(3.2rem, 10vw, 7.5rem);
+  line-height: 0.95; color: var(--ivory); letter-spacing: -0.01em;
+  opacity: 0; animation: fadeup 1s 0.7s ease forwards;
+}
+.hero-title em { display: block; color: var(--gold); font-style: italic; }
+.hero-desc {
+  font-style: italic; font-size: clamp(1rem, 2.5vw, 1.3rem);
+  color: var(--parch); max-width: 560px; margin: 1.8rem auto 2.5rem;
+  line-height: 1.85; opacity: 0; animation: fadeup 1s 1s ease forwards;
+}
+.hero-ctas {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+  opacity: 0; animation: fadeup 1s 1.3s ease forwards;
+}
+.cta {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  border: 1px solid var(--gold); color: var(--gold);
+  background: transparent; font-size: 0.88rem; letter-spacing: 0.3em;
+  text-transform: uppercase; padding: 0.9rem 2.2rem;
+  transition: all 0.3s;
+}
+.cta:hover { background: var(--gold); color: var(--ink); }
+.cta.sec { border-color: rgba(201,168,76,0.35); color: var(--parch); }
+.cta.sec:hover { border-color: var(--gold); color: var(--gold); background: transparent; }
+@keyframes fadeup { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── MAP SECTION ──────────────────────────────────────────────────────────── */
+#map-section {
+  padding: 6rem 2rem 4rem;
+  background: var(--ink);
+  border-top: 1px solid var(--border);
+}
+.section-head { text-align: center; margin-bottom: 2.5rem; }
+.section-eye { font-size: 0.72rem; letter-spacing: 0.5em; color: var(--terra); text-transform: uppercase; margin-bottom: 0.4rem; }
+.section-title { font-family: var(--display); font-size: clamp(1.9rem, 4vw, 3rem); color: var(--ivory); }
+#tour-map {
+  max-width: 920px; margin: 0 auto; height: 440px;
+  border: 1px solid var(--border); display: block;
+}
+#map-legend {
+  display: flex; flex-wrap: wrap; gap: 0.6rem;
+  justify-content: center; margin-top: 1.4rem;
+  max-width: 920px; margin-left: auto; margin-right: auto;
+}
+.leg-item {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.78rem; color: var(--parch); opacity: 0.75;
+  padding: 0.28rem 0.8rem; border: 1px solid var(--border);
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em;
+}
+.leg-item:hover { border-color: var(--gold); color: var(--gold); opacity: 1; }
+.leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.map-cta-wrap { text-align: center; margin-top: 2rem; }
+
+/* ── STOP SECTION ─────────────────────────────────────────────────────────── */
+.stop-section {
+  min-height: 100vh;
+  display: grid; grid-template-columns: 1fr 1fr;
+  position: relative;
+}
+.stop-section:nth-child(even) .stop-img-panel { order: 2; }
+.stop-section:nth-child(even) .stop-content   { order: 1; }
+@media (max-width: 900px) {
+  .stop-section { grid-template-columns: 1fr; }
+  .stop-section:nth-child(even) .stop-img-panel { order: 0; }
+  .stop-section:nth-child(even) .stop-content   { order: 0; }
+}
+
+/* Image panel */
+.stop-img-panel {
+  position: sticky; top: 0; height: 100vh; overflow: hidden;
+}
+@media (max-width: 900px) { .stop-img-panel { height: 58vw; position: relative; } }
+
+.stop-img-panel img {
+  width: 100%; height: 100%; object-fit: cover;
+  cursor: zoom-in; transition: transform 0.5s ease;
+}
+.stop-img-panel:hover img { transform: scale(1.03); }
+.stop-img-overlay {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(135deg, rgba(13,17,23,0.45) 0%, transparent 50%);
+}
+.stop-badge { position: absolute; top: 2rem; left: 2rem; }
+.stop-num { font-family: var(--display); font-size: 5.5rem; line-height: 1; color: var(--gold); opacity: 0.2; font-weight: 700; }
+.stop-timebadge {
+  background: rgba(13,17,23,0.88); border: 1px solid var(--gold);
+  color: var(--gold); font-size: 0.74rem; letter-spacing: 0.32em;
+  padding: 0.28rem 0.85rem; display: inline-block; margin-top: 0.2rem;
+}
+
+/* Gallery strip */
+.gallery-strip {
+  display: flex; gap: 0.4rem; margin-bottom: 1.3rem;
+  overflow-x: auto; scrollbar-width: none;
+}
+.gallery-strip::-webkit-scrollbar { display: none; }
+.g-thumb {
+  width: 74px; height: 54px; flex-shrink: 0; object-fit: cover;
+  cursor: pointer; opacity: 0.42; transition: opacity 0.22s;
+  border: 1px solid transparent;
+}
+.g-thumb:hover, .g-thumb.active { opacity: 1; border-color: var(--gold); }
+
+/* Content panel */
+.stop-content {
+  padding: 5.5rem 4rem; background: var(--ink);
+  display: flex; flex-direction: column; justify-content: center;
+  position: relative;
+}
+@media (max-width: 900px) { .stop-content { padding: 2.8rem 1.5rem; } }
+.stop-content::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.2;
+}
+.stop-cat {
+  font-size: 0.7rem; letter-spacing: 0.45em; text-transform: uppercase;
+  color: var(--terra); margin-bottom: 0.7rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.stop-cat::before { content: ''; width: 2rem; height: 1px; background: var(--terra); }
+.stop-name {
+  font-family: var(--display); font-size: clamp(1.7rem, 3.5vw, 2.9rem);
+  line-height: 1.05; color: var(--ivory); margin-bottom: 0.35rem;
+}
+.stop-sub { font-style: italic; color: var(--gold2); font-size: 1.08rem; margin-bottom: 1.8rem; opacity: 0.85; }
+.stop-divider { width: 3rem; height: 1px; background: var(--gold); margin-bottom: 1.8rem; opacity: 0.35; }
+.stop-desc { font-size: 1rem; line-height: 1.9; color: var(--parch); margin-bottom: 1.8rem; font-weight: 300; }
+
+/* History box */
+.hist-box { background: rgba(201,168,76,0.05); border-left: 2px solid var(--gold); padding: 1.1rem 1.4rem; margin-bottom: 1.8rem; }
+.hist-label { font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.45rem; font-family: var(--display); }
+.hist-text { font-style: italic; font-size: 0.93rem; color: var(--parch); line-height: 1.75; opacity: 0.87; }
+
+/* Facts grid */
+.facts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 1.8rem; }
+.fact-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 0.85rem; text-align: center; }
+.fact-val { font-family: var(--display); font-size: 1.55rem; color: var(--gold); display: block; }
+.fact-lbl { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--parch); opacity: 0.52; margin-top: 0.15rem; }
+
+/* ── AUDIO GUIDE ─────────────────────────────────────────────────────────── */
+.audio-guide {
+  background: rgba(201,168,76,0.04);
+  border: 1px solid var(--border);
+  padding: 1rem 1.2rem; margin-bottom: 1.8rem;
+}
+.audio-row { display: flex; align-items: center; gap: 0.9rem; }
+.audio-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--gold); background: transparent;
+  color: var(--gold); font-size: 1.05rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.25s; flex-shrink: 0;
+  user-select: none; -webkit-user-select: none;
+}
+.audio-btn:hover { background: var(--gold); color: var(--ink); }
+.audio-btn.playing { background: var(--gold); color: var(--ink); }
+.audio-btn.loading { opacity: 0.55; }
+.audio-info { flex: 1; min-width: 0; }
+.audio-title { font-size: 0.72rem; letter-spacing: 0.22em; color: var(--gold); text-transform: uppercase; font-family: var(--display); }
+.audio-sub { font-size: 0.75rem; color: var(--parch); opacity: 0.5; margin-top: 0.12rem; font-style: italic; }
+/* Speed control */
+.audio-speed {
+  display: flex; gap: 0.3rem; margin-top: 0.6rem; align-items: center;
+}
+.speed-label { font-size: 0.65rem; letter-spacing: 0.1em; color: var(--parch); opacity: 0.45; margin-right: 0.2rem; }
+.speed-btn {
+  background: transparent; border: 1px solid var(--border); color: var(--parch);
+  font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer;
+  transition: all 0.2s; letter-spacing: 0.05em; opacity: 0.6;
+}
+.speed-btn.active { border-color: var(--gold); color: var(--gold); opacity: 1; }
+/* Waveform */
+.waveform { display: flex; align-items: center; gap: 2px; height: 20px; margin-top: 0.35rem; }
+.wbar { width: 2.5px; height: 4px; background: var(--gold); border-radius: 2px; opacity: 0.3; transition: height 0.12s; }
+.wbar.on { opacity: 1; }
+.wbar.on:nth-child(1){animation:w1 .7s ease-in-out infinite}
+.wbar.on:nth-child(2){animation:w1 .7s ease-in-out .08s infinite}
+.wbar.on:nth-child(3){animation:w1 .7s ease-in-out .16s infinite}
+.wbar.on:nth-child(4){animation:w1 .7s ease-in-out .06s infinite}
+.wbar.on:nth-child(5){animation:w1 .7s ease-in-out .22s infinite}
+.wbar.on:nth-child(6){animation:w1 .7s ease-in-out .1s infinite}
+.wbar.on:nth-child(7){animation:w1 .7s ease-in-out .18s infinite}
+.wbar.on:nth-child(8){animation:w1 .7s ease-in-out .04s infinite}
+.wbar.on:nth-child(9){animation:w1 .7s ease-in-out .14s infinite}
+.wbar.on:nth-child(10){animation:w1 .7s ease-in-out .2s infinite}
+@keyframes w1 { 0%,100%{height:3px} 50%{height:18px} }
+
+/* Tips */
+.tips-list { list-style: none; margin-bottom: 1.8rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.tips-list li { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.9rem; color: var(--parch); opacity: 0.72; line-height: 1.5; }
+.tips-list li::before { content: '◆'; color: var(--gold); font-size: 0.42rem; margin-top: 0.42rem; flex-shrink: 0; }
+
+/* Food section */
+.food-box { background: rgba(181,84,27,0.07); border: 1px solid rgba(181,84,27,0.22); padding: 1.2rem 1.4rem; margin-bottom: 1.8rem; }
+.food-label { font-size: 0.7rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--terra); margin-bottom: 0.9rem; font-family: var(--display); }
+.dish { padding-bottom: 0.45rem; margin-bottom: 0.45rem; border-bottom: 1px dotted var(--border); }
+.dish:last-child { border-bottom: none; margin-bottom: 0; }
+.dish-name { font-family: var(--display); font-size: 1rem; color: var(--ivory); }
+.dish-desc { font-size: 0.78rem; color: var(--parch); opacity: 0.58; font-style: italic; margin-top: 0.1rem; }
+
+/* Nav buttons */
+.stop-nav { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.btn { 
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  border: 1px solid rgba(201,168,76,0.35); color: var(--parch);
+  background: transparent; font-size: 0.82rem; letter-spacing: 0.2em;
+  text-transform: uppercase; padding: 0.68rem 1.4rem; transition: all 0.25s;
+}
+.btn:hover { border-color: var(--gold); color: var(--gold); }
+.btn.primary { background: var(--gold); border-color: var(--gold); color: var(--ink); font-weight: 600; }
+.btn.primary:hover { background: var(--gold2); }
+
+/* ── LIGHTBOX ─────────────────────────────────────────────────────────────── */
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.96);
+  z-index: 1000; display: none; align-items: center; justify-content: center;
+}
+#lightbox.open { display: flex; }
+#lightbox img { max-width: 93vw; max-height: 90vh; object-fit: contain; }
+#lb-close {
+  position: absolute; top: 1.4rem; right: 1.4rem;
+  background: none; border: 1px solid var(--gold); color: var(--gold);
+  width: 38px; height: 38px; font-size: 1.1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── REVEAL ───────────────────────────────────────────────────────────────── */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.65s ease, transform 0.65s ease; }
+.reveal.vis { opacity: 1; transform: none; }
+
+/* ── LEAFLET OVERRIDES ────────────────────────────────────────────────────── */
+.leaflet-container { background: #0e1420; }
+.leaflet-popup-content-wrapper { background: rgba(14,20,32,0.97); border: 1px solid rgba(201,168,76,0.25); border-radius: 0; color: var(--ivory); }
+.leaflet-popup-tip { background: rgba(14,20,32,0.97); }
+.leaflet-popup-content { margin: 12px 16px; font-family: var(--serif); }
+</style>
+</head>
+<body>
+
+<!-- Progress -->
+<div id="progress-bar"><div id="progress-fill"></div></div>
+
+<!-- Header -->
+<header id="site-header">
+  <div class="brand">Córdoba <span>· Al‑Ándalus</span></div>
+  <div id="current-stop">Inicio</div>
+</header>
+
+<!-- Side nav dots -->
+<nav id="side-nav"></nav>
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <button id="lb-close" onclick="closeLB()">✕</button>
+  <img id="lb-img" src="" alt="">
+</div>
+
+<main>
+
+<!-- ── HERO ─────────────────────────────────────────────────────────────── -->
+<section id="hero">
+  <div id="hero-bg"></div>
+  <div id="hero-vignette"></div>
+  <div id="hero-content">
+    <div class="eyebrow">Patrimonio de la Humanidad · UNESCO · 3 Civilizaciones</div>
+    <h1 class="hero-title">La Ciudad<br><em>Califal</em></h1>
+    <p class="hero-desc">Donde el Imperio Romano, el Califato de Al‑Ándalus y la Corona de Castilla se fundieron durante siglos para crear uno de los centros culturales más brillantes de la historia humana.</p>
+    <div class="hero-ctas">
+      <button class="cta" onclick="scrollTo('map-section')">▼ Ver ruta en el mapa</button>
+      <button class="cta sec" onclick="scrollTo('stop-0')">▶ Comenzar visita</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── MAP ──────────────────────────────────────────────────────────────── -->
+<section id="map-section">
+  <div class="section-head">
+    <div class="section-eye reveal">Ruta completa · 1 día · a pie</div>
+    <h2 class="section-title reveal">La Ruta en el Mapa</h2>
+  </div>
+  <div id="tour-map"></div>
+  <div id="map-legend"></div>
+  <div class="map-cta-wrap" style="margin-top:2rem">
+    <button class="btn primary" onclick="scrollTo('stop-0')">▶ Comenzar la visita guiada</button>
+  </div>
+</section>
+
+<!-- ── STOPS ─────────────────────────────────────────────────────────────── -->
+<div id="stops-root"></div>
+
+</main>
+
+<script>
+// ── DATA ────────────────────────────────────────────────────────────────────
+var STOPS = [
+  {
+    id:"stop-0", num:"01", time:"09:00", dur:"90 min",
+    cat:"Monumento Emblema", color:"#C9A84C",
+    lat:37.8789, lng:-4.7794,
+    name:"Mezquita-Catedral",
+    sub:"El bosque de columnas donde el Islam y el Cristianismo coexisten",
+    img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Interior_of_Mezquita_de_C%C3%B3rdoba_%282%29.jpg/1280px-Interior_of_Mezquita_de_C%C3%B3rdoba_%282%29.jpg",
+    gallery:[
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Interior_of_Mezquita_de_C%C3%B3rdoba_%282%29.jpg/960px-Interior_of_Mezquita_de_C%C3%B3rdoba_%282%29.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Cordoba_mezquita_kathedrale_nacht.jpg/960px-Cordoba_mezquita_kathedrale_nacht.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/The_Mihrab%2C_the_Great_Mosque%2C_Cordoba.jpg/720px-The_Mihrab%2C_the_Great_Mosque%2C_Cordoba.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Cordoba_-_Mezquita-Catedral_-_Orange_Tree_Courtyard.jpg/960px-Cordoba_-_Mezquita-Catedral_-_Orange_Tree_Courtyard.jpg"
+    ],
+    desc:"La Mezquita-Catedral de Córdoba es una de las obras maestras de la arquitectura mundial y el monumento más visitado de Andalucía. Sobre una antigua basílica visigoda, el califa Abd al-Rahman I ordenó en el año 784 la construcción de la gran mezquita. Sus sucesores la fueron ampliando hasta crear un espacio con 856 columnas de mármol, jaspe y granito, coronadas por los icónicos arcos de herradura bicolores en rojo ladrillo y blanco piedra.",
+    hist:"En 1236, Fernando III reconquistó Córdoba y consagró la mezquita como catedral. Los reyes castellanos construyeron el coro y la capilla mayor en su interior en el siglo XVI. El propio Carlos I lo lamentó: «Habéis destruido algo único para construir algo que se puede ver en cualquier parte». Hoy es el único edificio del mundo donde una catedral gótico-renacentista se alza dentro de una gran mezquita.",
+    facts:[{v:"784",l:"Año fundación"},{v:"856",l:"Columnas"},{v:"23.400m²",l:"Superficie"}],
+    audio:"Bienvenidos a la Mezquita-Catedral de Córdoba, uno de los monumentos más extraordinarios de la humanidad. Detente un momento antes de entrar. Cierra los ojos e imagina que estás en el año 786 después de Cristo. Abd al-Rahman el Primero, el único superviviente de la masacre de los omeyas en Damasco, ha cruzado el Mediterráneo y llega al extremo más occidental del mundo islámico. Aquí, en la antigua capital romana de Hispania, decide construir la gran mezquita de Occidente. Compra la mitad de la basílica visigoda de San Vicente a los cristianos cordobeses, y sobre sus cimientos levanta este bosque de columnas. Cuando abras los ojos, observa: cada columna tiene una historia diferente. Algunas vienen de templos romanos de Mérida, otras de palacios visigodos. Abd al-Rahman las reutiliza, las adapta, las transforma en algo nuevo y único. Esto es la esencia de Córdoba: la capacidad de absorber culturas distintas y crear algo más bello que la suma de sus partes. Fíjate ahora en los arcos bicolores, rojos y blancos, que se repiten hasta el infinito. Los ingenieros árabes resolvieron un problema brillante: las columnas heredadas eran demasiado cortas. Colocaron un segundo arco encima del primero para ganar altura. El resultado, buscado por necesidad, es una de las imágenes más hipnóticas de la arquitectura universal.",
+    tips:["Compra la entrada online en mezquita-catedraldecordoba.es — las colas pueden ser de más de una hora","Las entradas de 8:30 a 9:30h son gratuitas para el culto religioso","El Patio de los Naranjos tiene la fuente árabe donde los fieles se purificaban antes de la oración","No te pierdas el Mihrab: el nicho de oro y mosaico bizantino que señala la dirección a La Meca"],
+    dishes: null
+  },
+  {
+    id:"stop-1", num:"02", time:"10:45", dur:"45 min",
+    cat:"Barrio Histórico", color:"#7A9E9F",
+    lat:37.8797, lng:-4.7789,
+    name:"La Judería",
+    sub:"Laberinto de cal y flores donde el tiempo se detuvo en el siglo XIV",
+    img:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Calleja_de_las_Flores_de_C%C3%B3rdoba.jpg/960px-Calleja_de_las_Flores_de_C%C3%B3rdoba.jpg",
+    gallery:[
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Calleja_de_las_Flores_de_C%C3%B3rdoba.jpg/960px-Calleja_de_las_Flores_de_C%C3%B3rdoba.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Sinagoga_de_C%C3%B3rdoba_-_interior.jpg/720px-Sinagoga_de_C%C3%B3rdoba_-_interior.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Calleja_d%27Andalusia.jpg/720px-Calleja_d%27Andalusia.jpg"
+    ],
+    desc:"El barrio judío de Córdoba es uno de los mejor conservados de toda Europa. Sus callejuelas estrechas, encaladas en blanco brillante y adornadas con cientos de macetas de geranios y claveles, forman un laberinto íntimo apenas cambiado desde la Edad Media. La comunidad judía cordobesa fue una de las más importantes del mundo medieval, produciendo figuras de la talla de Maimónides, el gran filósofo y médico del siglo XII.",
+    hist:"La comunidad judía alcanzó su esplendor bajo el califato islámico. Hasdai ibn Shaprut, médico judío al servicio del califa Abd al-Rahman III, era el hombre más influyente de la corte en el siglo X. Esa convivencia entre islam, judaísmo y cristianismo fue única en el mundo medieval. Terminó en 1492, cuando los Reyes Católicos decretaron la expulsión de los judíos de España.",
+    facts:[{v:"1315",l:"Año sinagoga"},{v:"1492",l:"Expulsión"},{v:"XII s.",l:"Maimónides"}],
+    audio:"Estás paseando ahora por una de las calles más fotografiadas de España: la Calleja de las Flores. Levanta la vista hacia el fondo de la calle. Verás la torre de la Mezquita enmarcada entre los muros blancos y las macetas de colores como en una postal perfecta. Pero este barrio es mucho más que una imagen bonita. Aquí, en estas mismas calles, nació en 1135 uno de los intelectos más extraordinarios de la historia humana: Moisés ben Maimón, conocido como Maimónides. Médico personal de Saladino el Grande en El Cairo. Filósofo que intentó reconciliar la razón de Aristóteles con la fe del Talmud. Astrónomo, matemático, jurista. Su obra Guía de Perplejos influyó en Tomás de Aquino, en Spinoza, en la filosofía europea durante siglos. Aquí está la ironía fascinante de Córdoba: el hombre que más influyó en el pensamiento cristiano medieval nació judío en una ciudad gobernada por el islam. Eso es la convivencia. Busca ahora la pequeña Sinagoga en la Calle Judíos. Construida hacia el año 1315, es una de las tres únicas sinagogas medievales conservadas en toda España. Entra y observa el silencio de las paredes de yeso decoradas con motivos hebraicos. Aquí rezaron durante siglos cordobeses que luego tuvieron que elegir entre el exilio, la conversión o la muerte.",
+    tips:["La Sinagoga está en Calle Judíos 20 — entrada 0.30€, gratuita domingos y festivos","Busca la estatua de bronce de Maimónides en la plaza que lleva su nombre","La Calleja de las Flores: mejor antes de las 10h o al atardecer para evitar aglomeraciones","En mayo el Festival de los Patios abre cientos de jardines privados — espectacular"],
+    dishes: null
+  },
+  {
+    id:"stop-2", num:"03", time:"11:30", dur:"60 min",
+    cat:"Fortaleza Real", color:"#8B5E3C",
+    lat:37.8764, lng:-4.7810,
+    name:"Alcázar de los Reyes Cristianos",
+    sub:"Desde donde los Reyes Católicos enviaron a Colón al Nuevo Mundo",
+    img:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Alc%C3%A1zar_de_los_Reyes_Cristianos._Jard%C3%ADn._-_panoramio.jpg/1280px-Alc%C3%A1zar_de_los_Reyes_Cristianos._Jard%C3%ADn._-_panoramio.jpg",
+    gallery:[
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Alc%C3%A1zar_de_los_Reyes_Cristianos._Jard%C3%ADn._-_panoramio.jpg/1280px-Alc%C3%A1zar_de_los_Reyes_Cristianos._Jard%C3%ADn._-_panoramio.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Alc%C3%A1zar_de_los_Reyes_Cristianos_garden_-_Cordoba_Spain.jpg/960px-Alc%C3%A1zar_de_los_Reyes_Cristianos_garden_-_Cordoba_Spain.jpg"
+    ],
+    desc:"El Alcázar de los Reyes Cristianos es una fortaleza medieval de cuatro torres construida en el siglo XIV por Alfonso XI sobre cimientos de un antiguo palacio árabe. Fue la residencia principal de los Reyes Católicos, que desde aquí dirigieron la reconquista del reino nazarí de Granada y recibieron a Cristóbal Colón para escuchar su proyecto de navegar hacia el Oeste.",
+    hist:"El Alcázar tiene una historia tan larga como dramática: fue palacio islámico, residencia real castellana, sede de la Inquisición española y cárcel hasta 1955. En su subsuelo se conservan mosaicos romanos del siglo II d.C. de extraordinaria calidad.",
+    facts:[{v:"1328",l:"Año construcción"},{v:"4",l:"Torres"},{v:"Gratis",l:"Jueves >18h"}],
+    audio:"Imagina este mismo patio en el invierno de 1486. Isabel de Castilla y Fernando de Aragón, los Reyes Católicos, se encuentran aquí, en el Alcázar de Córdoba, dirigiendo la guerra que acabará con el último reino musulmán de la Península, el reino nazarí de Granada. En ese mismo momento, un marino genovés con ideas peculiares lleva años intentando conseguir una audiencia real. Su nombre es Cristóbal Colón. Finalmente lo reciben. Le escuchan. Le preguntan. Y le dicen que no. Su proyecto de llegar a las Indias navegando hacia el oeste parece demasiado arriesgado, demasiado costoso, demasiado incierto. Colón no se rinde. Espera. Insiste. Y en enero de 1492, el mismo año en que cae Granada, los reyes le llaman de vuelta. Esta vez dicen que sí. Dos meses después zarpan las tres carabelas desde Palos de la Frontera. El mundo nunca volvió a ser igual. Y todo empezó aquí, en estos jardines con olor a naranjos y sonido constante de agua. Cuando recorras los jardines del Alcázar, fíjate en los estanques y los canales. Es tecnología árabe de mil años de antigüedad al servicio del placer y del frescor.",
+    tips:["Entrada gratuita los jueves a partir de las 18:00h","Los jardines abren de noche en verano con las fuentes iluminadas — muy recomendable","Los mosaicos romanos del subsuelo son de los mejores conservados en Hispania","Desde lo alto de las cuatro torres hay vistas magníficas sobre el río y la ciudad"],
+    dishes: null
+  },
+  {
+    id:"stop-3", num:"04", time:"13:00", dur:"90 min",
+    cat:"Gastronomía · Almuerzo", color:"#B5541B",
+    lat:37.8753, lng:-4.7851,
+    name:"Taberna La Viuda",
+    sub:"Cocina cordobesa auténtica junto al Alcázar",
+    img:"https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1280&q=85&auto=format&fit=crop",
+    gallery:[
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=960&q=85&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=960&q=85&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=960&q=85&auto=format&fit=crop"
+    ],
+    desc:"Taberna La Viuda es uno de esos restaurantes que los cordobeses guardan como un secreto a medias. En la tranquila Calle San Basilio, a escasos minutos del Alcázar, encontrarás mesas de madera, azulejos en las paredes y una cocina que huele a guisos de toda la vida. La clientela local es la mejor señal de calidad posible.",
+    hist:"La gastronomía cordobesa es heredera directa de Al-Ándalus. El salmorejo tiene sus raíces en la mazamorra árabe: pasta de almendras, pan, aceite y ajo. Con el tomate americano en el siglo XVI evolucionó hasta la forma actual. El flamenquín, rulo de jamón serrano y lomo empanado, es una invención cordobesa del siglo XIX.",
+    facts:[{v:"4.6★",l:"Valoración"},{v:"13–16h",l:"Horario"},{v:"€€",l:"Precio medio"}],
+    audio:"Para. Respira hondo. Siéntate. Has caminado por casi tres mil años de historia esta mañana y ahora mereces un descanso de verdad. La cocina cordobesa es una de las más antiguas y sofisticadas de Europa, heredera directa de la civilización que hizo de esta ciudad el centro cultural del mundo occidental durante el siglo X. Cuando llegue el plato de salmorejo, obsérvalo un momento antes de comerlo. Ese rojo intenso, esa textura densa y sedosa que no se parece en nada al gazpacho que conoces. El salmorejo cordobés se elabora solo con cinco ingredientes: tomate maduro, pan del día anterior, ajo, aceite de oliva virgen extra y sal. Nada más. La calidad de cada ingrediente y la paciencia del proceso lo convierten en algo completamente diferente. Los cordobeses lo coronan con huevo duro picado y lascas de jamón ibérico. La combinación es perfecta: la acidez fresca del tomate, la untuosidad del aceite, el perfume del ajo, la sal del jamón. Cierra los ojos con el primer cucharón. Eso es Córdoba en forma líquida. Después pide el flamenquín: un rulo crujiente de jamón serrano enrollado en lomo de cerdo, empanado y frito. Es la tapa más cordobesa que existe, y en La Viuda la hacen especialmente bien.",
+    tips:["Reserva con antelación, especialmente en fin de semana — Tel. 957 29 69 05","Pide la cerveza artesana de la casa","Calle San Basilio 52, a 5 minutos andando del Alcázar","El postre: tarta de queso de la casa, no la encontrarás en el menú pero siempre la tienen"],
+    dishes:[
+      {n:"Salmorejo cordobés",d:"Con jamón ibérico y huevo duro — el plato más emblemático de Córdoba"},
+      {n:"Flamenquín",d:"Rulo de jamón y lomo empanado — la tapa más cordobesa"},
+      {n:"Presa ibérica",d:"Corte del cerdo ibérico a la brasa, jugoso y potente"},
+      {n:"Mazamorra",d:"El primo blanco del salmorejo: almendras, pan, aceite, sin tomate"}
+    ]
+  },
+  {
+    id:"stop-4", num:"05", time:"14:45", dur:"30 min",
+    cat:"Monumento Romano", color:"#6B7FA3",
+    lat:37.8767, lng:-4.7780,
+    name:"Puente Romano",
+    sub:"Dos mil años cruzando el Guadalquivir bajo la sombra de la Mezquita",
+    img:"https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Puente_romano_de_C%C3%B3rdoba_%28de_noche%29.jpg/1280px-Puente_romano_de_C%C3%B3rdoba_%28de_noche%29.jpg",
+    gallery:[
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Puente_romano_de_C%C3%B3rdoba_%28de_noche%29.jpg/1280px-Puente_romano_de_C%C3%B3rdoba_%28de_noche%29.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Cordoba_Roman_Bridge_%288392040099%29.jpg/1280px-Cordoba_Roman_Bridge_%288392040099%29.jpg"
+    ],
+    desc:"El Puente Romano de Córdoba es una de las estructuras más antiguas en uso de España. Construido en el siglo I a.C. sobre el río Guadalquivir, tiene 247 metros de longitud y 16 arcos de piedra. Cruzarlo a pie, con la silueta de la Mezquita a un lado y el horizonte abierto del río al otro, es uno de los momentos más cinematográficos de todo el viaje.",
+    hist:"El Guadalquivir fue el corazón económico de Hispania romana y del califato de Al-Ándalus. Los romanos lo hicieron navegable hasta Córdoba, convirtiéndola en el puerto interior más importante de la Península. Al otro extremo del puente, la Torre de la Calahorra fue construida en el siglo XIV como puerta defensiva.",
+    facts:[{v:"I a.C.",l:"Construcción"},{v:"247m",l:"Longitud"},{v:"Gratis",l:"Acceso libre 24h"}],
+    audio:"Párate ahora en el centro del puente y gírate hacia la Mezquita. Esta vista exacta que tienes en este momento, el río verde y ancho, el puente de piedra que se pierde en ambas direcciones, la torre de la Mezquita al fondo con sus naranjos asomando por encima de la muralla, es exactamente la misma que contemplaban los viajeros medievales que llegaban a Córdoba desde el sur. En el siglo X, cuando Córdoba era la ciudad más grande de Europa occidental con más de trescientas mil habitantes, este puente era el umbral sagrado por donde entraban mercaderes de Bagdad, embajadores del rey de Sajonia, poetas de Persia, médicos judíos de Alejandría, peregrinos camino de Santiago. Todos cruzaron estas mismas piedras. El Guadalquivir, que los romanos llamaban Baetis y los árabes Wadi al-Kabir, el río grande, era entonces navegable hasta aquí. Por estas aguas llegaban cada año miles de toneladas de aceite de oliva andaluz que alimentaban a la ciudad de Roma. Dos mil años después, las piedras del puente siguen aguantando. Pregúntate: ¿qué permanecerá de lo que construimos hoy en otros dos mil años?",
+    tips:["Acceso completamente libre las 24 horas del día","La Torre de la Calahorra al otro extremo tiene un museo interactivo de Al-Ándalus, entrada 4.50€","Las mejores fotografías del puente son desde la orilla norte, a la altura del Alcázar","De noche, con el puente iluminado reflejado en el río, es una de las imágenes más bellas de Córdoba"],
+    dishes: null
+  },
+  {
+    id:"stop-5", num:"06", time:"16:00", dur:"75 min",
+    cat:"Palacio Nobiliario", color:"#5A8A5E",
+    lat:37.8886, lng:-4.7741,
+    name:"Palacio de Viana",
+    sub:"Doce patios, doce jardines, doce universos paralelos",
+    img:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Palacio_de_Viana%2C_C%C3%B3rdoba-_patio.jpg/1280px-Palacio_de_Viana%2C_C%C3%B3rdoba-_patio.jpg",
+    gallery:[
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Palacio_de_Viana%2C_C%C3%B3rdoba-_patio.jpg/1280px-Palacio_de_Viana%2C_C%C3%B3rdoba-_patio.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Palacio_de_Viana%2C_C%C3%B3rdoba.jpg/960px-Palacio_de_Viana%2C_C%C3%B3rdoba.jpg"
+    ],
+    desc:"El Palacio de Viana es el gran secreto de Córdoba que los viajeros rápidos se pierden. Este palacio del siglo XIV encierra doce patios distintos que son doce mundos diferentes: jardín de las columnas, patio del naranjo, jardín de los poetas, patio mudéjar... Cada uno tiene su personalidad, su microclima, su fragancia propia.",
+    hist:"El patio cordobés es herencia de la arquitectura doméstica árabe, que retomó el peristilo romano. El principio es brillante: en pleno verano cordobés, el agua que evapora, la sombra de los muros altos y la transpiración de las plantas crean un microclima hasta 10 grados más fresco que la calle. Tecnología de bienestar del año 900.",
+    facts:[{v:"12",l:"Patios"},{v:"XIV s.",l:"Origen"},{v:"UNESCO",l:"Patrimonio Inmaterial"}],
+    audio:"El patio cordobés es uno de los grandes inventos de la historia de la arquitectura doméstica, y aquí, en el Palacio de Viana, tiene su expresión más completa. Piénsalo despacio: en el corazón de cada casa, un agujero abierto al cielo. Agua, plantas, piedra, sombra. En pleno agosto cordobés, cuando la temperatura en la calle alcanza los cuarenta y dos grados, el interior de un buen patio puede estar hasta diez grados más fresco. El agua de la fuente central evapora y enfría. Los muros altos proyectan sombra desde el amanecer. Las plantas, la hiedra, los geranios, los jazmines, transpiran y humedecen el aire. Es aire acondicionado de la alta Edad Media, inventado por ingenieros árabes que habían aprendido de los romanos y de los persas. Ahora tienes ante ti doce variaciones sobre ese mismo tema. Doce patios, doce atmósferas distintas, doce argumentos diferentes del mismo poema. El patio de las columnas, severo y elegante. El jardín de los poetas, con sus rosales y su fuente pequeña. El patio mudéjar, con sus azulejos brillantes. Tómate tu tiempo. Siéntate en alguno. Cierra los ojos. Escucha solo el agua.",
+    tips:["Solo patios: ~8€ · Con palacio interior con guía: ~14€","La visita al interior del palacio es con guía obligatorio en español","El Patio de las Columnas y el Jardín de los Poetas son los más impresionantes","Lunes solo hasta las 15:00; martes a domingo hasta las 19:00h"],
+    dishes: null
+  },
+  {
+    id:"stop-6", num:"07", time:"20:30", dur:"120 min",
+    cat:"Gastronomía · Cena", color:"#B5541B",
+    lat:37.8898, lng:-4.7824,
+    name:"Taberna de Almodovar",
+    sub:"Bib Gourmand Michelin · La cocina califal revisada",
+    img:"https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1280&q=85&auto=format&fit=crop",
+    gallery:[
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=960&q=85&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1559847844-5315695dadae?w=960&q=85&auto=format&fit=crop"
+    ],
+    desc:"La Taberna de Almodovar tiene la distinción Bib Gourmand de la Guía Michelin, que reconoce la mejor relación calidad-precio. La carta bebe de la tradición cordobesa más profunda y el chef trabaja con productores locales recuperando recetas medievales con técnica contemporánea. El lugar perfecto para cerrar un día extraordinario.",
+    hist:"La cocina andaluza medieval era extraordinariamente sofisticada. El Manuscrito Anónimo, recetario árabe del siglo XIII, describe preparaciones con almendras, miel, azafrán y rosas que anticipan siglos la cocina europea moderna. Muchos de esos sabores sobreviven hoy en la mazamorra, el pestiño o los dulces de convento andaluces.",
+    facts:[{v:"Michelin",l:"Bib Gourmand"},{v:"20:30h",l:"Apertura cena"},{v:"€€",l:"Precio medio"}],
+    audio:"Has llegado al final de tu día en Córdoba. Llevas sobre los hombros el peso ligero de doce siglos de historia, de civilizaciones que construyeron y destruyeron y volvieron a construir sobre estas mismas piedras. Has visto el bosque de columnas que levantó un exiliado omeya con materiales robados al Imperio Romano. Has caminado por las calles donde nació el mayor filósofo judío de la Edad Media en una ciudad islámica. Has cruzado un puente que llevan usando dos mil años. Y ahora, aquí, en esta taberna de paredes encaladas y olor a vino de Montilla, vas a comer el plato más honesto y profundo de toda la cocina cordobesa: el rabo de toro. Es un guiso de horas. La carne del rabo del toro, que en Córdoba tiene la dignidad de un ritual, se estofará durante horas en vino tinto local, cebolla, zanahoria, tomillo y especias que vienen directamente de las recetas árabes del siglo XIII. La carne se separa sola del hueso. La salsa es espesa, oscura, compleja, perfecta. El rabo de toro cordobés es la historia completa de España en un plato: la vaca romana, la técnica árabe, el vino castellano, la paciencia andaluza. Cuando lo pruebas, entiendes por qué la gente lleva siglos viviendo aquí.",
+    tips:["Reserva obligatoria, especialmente jueves a domingo — latabernadealmodovar.com","El menú degustación completo cuesta unos 55€ con maridaje incluido","Pide los vinos de Montilla-Moriles, la Denominación de Origen de Córdoba, injustamente desconocida","Guarda sitio para el postre: los pestiños con miel de caña son de origen árabe puro"],
+    dishes:[
+      {n:"Mazamorra cordobesa",d:"Sopa fría de almendras y pan — receta árabe del siglo X, anterior al salmorejo"},
+      {n:"Croquetas de puchero",d:"Con caldo tradicional cordobés, cremosas y perfectas"},
+      {n:"Rabo de toro estofado",d:"El guiso más emblemático de Córdoba — imprescindible"},
+      {n:"Cordero a la miel con especias",d:"Herencia directa de la cocina califal del siglo X"},
+      {n:"Pestiños con miel de caña",d:"Postre andaluz de origen árabe — el mejor final posible"}
+    ]
+  }
+];
+
+// ── AUDIO ENGINE ─────────────────────────────────────────────────────────────
+var audioState = { status:'idle', idx:-1, utter:null, rate:0.92 };
+var synth = window.speechSynthesis;
+
+function getVoice() {
+  var voices = synth.getVoices();
+  // Priority: Google es-ES > Microsoft es-ES > any es-ES > any es
+  return (
+    voices.find(function(v){ return v.lang==='es-ES' && /google/i.test(v.name); }) ||
+    voices.find(function(v){ return v.lang==='es-ES' && /microsoft/i.test(v.name); }) ||
+    voices.find(function(v){ return v.lang==='es-ES'; }) ||
+    voices.find(function(v){ return v.lang.startsWith('es'); }) ||
+    null
+  );
+}
+
+function setWave(idx, on) {
+  var wave = document.getElementById('wave-'+idx);
+  if (!wave) return;
+  wave.querySelectorAll('.wbar').forEach(function(b){ on ? b.classList.add('on') : b.classList.remove('on'); });
+}
+
+function setBtn(idx, status) {
+  var btn = document.getElementById('abtn-'+idx);
+  if (!btn) return;
+  var lbl = document.getElementById('albl-'+idx);
+  if (status === 'playing') {
+    btn.textContent = '⏸'; btn.classList.add('playing'); btn.classList.remove('loading');
+    if (lbl) lbl.textContent = 'Reproduciendo — pulsa para pausar';
+    setWave(idx, true);
+  } else if (status === 'paused') {
+    btn.textContent = '▶'; btn.classList.remove('playing'); btn.classList.remove('loading');
+    if (lbl) lbl.textContent = 'En pausa — pulsa para continuar';
+    setWave(idx, false);
+  } else if (status === 'loading') {
+    btn.textContent = '…'; btn.classList.add('loading');
+    if (lbl) lbl.textContent = 'Cargando voces…';
+  } else {
+    btn.textContent = '▶'; btn.classList.remove('playing'); btn.classList.remove('loading');
+    if (lbl) lbl.textContent = 'Narración con voz de alta calidad';
+    setWave(idx, false);
+  }
+}
+
+function toggleAudio(idx) {
+  // PAUSE if same stop playing
+  if (audioState.status === 'playing' && audioState.idx === idx) {
+    synth.pause();
+    audioState.status = 'paused';
+    setBtn(idx, 'paused');
+    return;
+  }
+  // RESUME if same stop paused
+  if (audioState.status === 'paused' && audioState.idx === idx) {
+    synth.resume();
+    audioState.status = 'playing';
+    setBtn(idx, 'playing');
+    return;
+  }
+  // STOP previous if different stop
+  if (audioState.idx >= 0 && audioState.idx !== idx) {
+    synth.cancel();
+    setBtn(audioState.idx, 'idle');
+  } else if (audioState.idx === idx) {
+    synth.cancel();
+  }
+
+  audioState.status = 'loading';
+  audioState.idx = idx;
+  setBtn(idx, 'loading');
+
+  // Small delay so cancel() settles (Chrome/Safari quirk)
+  setTimeout(function() {
+    var text = STOPS[idx].audio;
+    var utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'es-ES';
+    utter.rate = audioState.rate;
+    utter.pitch = 1.0;
+    utter.volume = 1.0;
+
+    var voice = getVoice();
+    if (voice) utter.voice = voice;
+
+    utter.onstart  = function(){ audioState.status='playing'; setBtn(idx,'playing'); };
+    utter.onpause  = function(){ audioState.status='paused';  setBtn(idx,'paused');  };
+    utter.onresume = function(){ audioState.status='playing'; setBtn(idx,'playing'); };
+    utter.onend    = function(){ audioState.status='idle'; audioState.idx=-1; audioState.utter=null; setBtn(idx,'idle'); };
+    utter.onerror  = function(){ audioState.status='idle'; audioState.idx=-1; audioState.utter=null; setBtn(idx,'idle'); };
+
+    audioState.utter = utter;
+    synth.speak(utter);
+  }, 150);
+}
+
+function setSpeed(rate) {
+  audioState.rate = rate;
+  // Update active utterance if speaking
+  if (audioState.utter && (audioState.status==='playing'||audioState.status==='paused')) {
+    audioState.utter.rate = rate;
+  }
+  // Update UI
+  document.querySelectorAll('.speed-btn').forEach(function(b){
+    b.classList.toggle('active', parseFloat(b.dataset.r) === rate);
+  });
+}
+
+// Preload voices
+if (synth.onvoiceschanged !== undefined) { synth.onvoiceschanged = function(){ synth.getVoices(); }; }
+synth.getVoices();
+
+// ── BUILD STOPS HTML ─────────────────────────────────────────────────────────
+function buildGallery(stop, si) {
+  if (stop.gallery.length < 2) return '';
+  return '<div class="gallery-strip">' +
+    stop.gallery.map(function(g, gi) {
+      return '<img class="g-thumb'+(gi===0?' active':'')+'" src="'+g+'" loading="lazy" alt="" ' +
+        'onclick="switchImg('+si+',\''+g+'\',this)">';
+    }).join('') + '</div>';
+}
+
+function buildFacts(facts) {
+  return '<div class="facts-grid reveal">' +
+    facts.map(function(f){
+      return '<div class="fact-card"><span class="fact-val">'+f.v+'</span><div class="fact-lbl">'+f.l+'</div></div>';
+    }).join('') + '</div>';
+}
+
+function buildAudio(stop, si) {
+  return '<div class="audio-guide reveal">' +
+    '<div class="audio-row">' +
+      '<button class="audio-btn" id="abtn-'+si+'" onclick="toggleAudio('+si+')">▶</button>' +
+      '<div class="audio-info">' +
+        '<div class="audio-title">🎧 Audioguía — '+stop.name+'</div>' +
+        '<div class="audio-sub" id="albl-'+si+'">Narración con voz de alta calidad</div>' +
+        '<div class="waveform" id="wave-'+si+'">' +
+          [4,8,14,6,18,10,4,16,8,12].map(function(h){
+            return '<div class="wbar" style="height:'+h+'px"></div>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="audio-speed">' +
+      '<span class="speed-label">Velocidad:</span>' +
+      [0.75,0.88,1.0,1.15].map(function(r){
+        var lbl = r===0.75?'0.75×':r===0.88?'0.9×':r===1.0?'1×':'1.15×';
+        return '<button class="speed-btn'+(r===0.92||r===0.88?' active':'')+'" data-r="'+r+'" onclick="setSpeed('+r+')">'+lbl+'</button>';
+      }).join('') +
+    '</div>' +
+  '</div>';
+}
+
+function buildDishes(dishes) {
+  if (!dishes) return '';
+  return '<div class="food-box reveal"><div class="food-label">🍽 Qué pedir</div>' +
+    dishes.map(function(d){
+      return '<div class="dish"><div class="dish-name">'+d.n+'</div><div class="dish-desc">'+d.d+'</div></div>';
+    }).join('') + '</div>';
+}
+
+function buildTips(tips) {
+  return '<ul class="tips-list reveal">' +
+    tips.map(function(t){ return '<li>'+t+'</li>'; }).join('') +
+  '</ul>';
+}
+
+function buildNavBtns(si) {
+  var prev = si > 0 ? '<button class="btn" onclick="jumpTo('+si+','+(si-1)+')">← '+STOPS[si-1].name.split(' ')[0]+'</button>' : '';
+  var next = si < STOPS.length-1
+    ? '<button class="btn primary" onclick="jumpTo('+si+','+(si+1)+')">'+STOPS[si+1].name.split(' ')[0]+' →</button>'
+    : '<button class="btn primary" onclick="scrollTo(\'hero\')">↑ Inicio</button>';
+  return '<div class="stop-nav">'+prev+next+'</div>';
+}
+
+function buildStop(stop, si) {
+  var imgClick = 'openLB("'+stop.img+'")';
+  return '<section class="stop-section" id="'+stop.id+'" data-si="'+si+'">' +
+    '<div class="stop-img-panel">' +
+      '<img id="main-img-'+si+'" src="'+stop.img+'" loading="lazy" alt="'+stop.name+'" onclick="'+imgClick+'">' +
+      '<div class="stop-img-overlay"></div>' +
+      '<div class="stop-badge">' +
+        '<div class="stop-num">'+stop.num+'</div>' +
+        '<div class="stop-timebadge">'+stop.time+'h · '+stop.dur+'</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="stop-content">' +
+      buildGallery(stop, si) +
+      '<div class="stop-cat reveal">'+stop.cat+'</div>' +
+      '<h2 class="stop-name reveal">'+stop.name+'</h2>' +
+      '<div class="stop-sub reveal">'+stop.sub+'</div>' +
+      '<div class="stop-divider"></div>' +
+      '<p class="stop-desc reveal">'+stop.desc+'</p>' +
+      '<div class="hist-box reveal"><div class="hist-label">📜 Contexto Histórico</div><div class="hist-text">'+stop.hist+'</div></div>' +
+      buildFacts(stop.facts) +
+      buildDishes(stop.dishes) +
+      buildAudio(stop, si) +
+      buildTips(stop.tips) +
+      buildNavBtns(si) +
+    '</div>' +
+  '</section>';
+}
+
+document.getElementById('stops-root').innerHTML = STOPS.map(function(s,i){ return buildStop(s,i); }).join('');
+
+// ── MAP ──────────────────────────────────────────────────────────────────────
+var map = L.map('tour-map', { center:[37.882,-4.779], zoom:14, scrollWheelZoom:false });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
+  subdomains:'abcd', maxZoom:19
+}).addTo(map);
+
+// Route polyline
+L.polyline(STOPS.map(function(s){ return [s.lat, s.lng]; }), {
+  color:'#C9A84C', weight:2, opacity:0.55, dashArray:'6,9'
+}).addTo(map);
+
+// Markers
+STOPS.forEach(function(s, i) {
+  var icon = L.divIcon({
+    className:'',
+    html:'<div style="width:30px;height:30px;border-radius:50%;background:'+s.color+';border:2px solid rgba(255,255,255,0.75);display:flex;align-items:center;justify-content:center;color:#0D1117;font-weight:700;font-size:0.76rem;box-shadow:0 3px 10px rgba(0,0,0,0.6);">'+(i+1)+'</div>',
+    iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-16]
+  });
+  var marker = L.marker([s.lat,s.lng],{icon:icon}).addTo(map);
+  marker.bindPopup(
+    '<div style="font-family:Georgia,serif;">' +
+    '<div style="font-size:0.65rem;letter-spacing:0.2em;color:'+s.color+';text-transform:uppercase;margin-bottom:0.2rem;">'+s.time+'h · '+s.dur+'</div>' +
+    '<div style="font-size:1rem;font-weight:600;margin-bottom:0.15rem;">'+s.name+'</div>' +
+    '<div style="font-size:0.78rem;opacity:0.65;margin-bottom:0.5rem;font-style:italic;">'+s.sub.slice(0,50)+'…</div>' +
+    '<a onclick="scrollTo(\''+s.id+'\')" style="color:'+s.color+';font-size:0.8rem;cursor:pointer;letter-spacing:0.05em;">Ver detalle →</a>' +
+    '</div>',
+    { maxWidth:220 }
+  );
+});
+
+// Legend
+var legend = document.getElementById('map-legend');
+STOPS.forEach(function(s,i) {
+  var item = document.createElement('button');
+  item.className = 'leg-item';
+  item.innerHTML = '<div class="leg-dot" style="background:'+s.color+'"></div>'+s.num+' · '+s.name;
+  item.onclick = function(){ scrollTo(s.id); };
+  legend.appendChild(item);
+});
+
+// ── SIDE NAV ─────────────────────────────────────────────────────────────────
+var sideNav = document.getElementById('side-nav');
+STOPS.forEach(function(s,i) {
+  var dot = document.createElement('button');
+  dot.className = 'nav-dot';
+  dot.setAttribute('data-label', s.time+'h · '+s.name);
+  dot.onclick = function(){ scrollTo(s.id); };
+  sideNav.appendChild(dot);
+});
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function scrollTo(id) {
+  var el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior:'smooth' });
+}
+
+function jumpTo(fromSi, toSi) {
+  if (audioState.status !== 'idle' && audioState.idx === fromSi) {
+    synth.cancel(); audioState.status='idle'; audioState.idx=-1;
+    setBtn(fromSi,'idle');
+  }
+  scrollTo(STOPS[toSi].id);
+}
+
+function switchImg(si, src, thumb) {
+  document.getElementById('main-img-'+si).src = src;
+  var panel = document.getElementById(STOPS[si].id).querySelector('.stop-img-panel');
+  panel.querySelectorAll('.g-thumb').forEach(function(t){ t.classList.remove('active'); });
+  thumb.classList.add('active');
+}
+
+function openLB(src) {
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLB() { document.getElementById('lightbox').classList.remove('open'); }
+document.getElementById('lightbox').addEventListener('click', function(e){ if(e.target===this) closeLB(); });
+
+// ── SCROLL HANDLER ─────────────────────────────────────────────────────────
+var dots, counterEl, fillEl;
+window.addEventListener('DOMContentLoaded', function(){
+  dots = document.querySelectorAll('.nav-dot');
+  counterEl = document.getElementById('current-stop');
+  fillEl = document.getElementById('progress-fill');
+});
+
+var activeSection = -1;
+window.addEventListener('scroll', function(){
+  var total = document.body.scrollHeight - window.innerHeight;
+  fillEl.style.width = ((window.scrollY / total) * 100) + '%';
+
+  // Find active section
+  var cur = -1;
+  STOPS.forEach(function(s,i){
+    var el = document.getElementById(s.id);
+    if (!el) return;
+    if (el.getBoundingClientRect().top <= window.innerHeight * 0.5) cur = i;
+  });
+  if (cur !== activeSection) {
+    activeSection = cur;
+    dots && dots.forEach(function(d,i){ d.classList.toggle('active', i===cur); });
+    counterEl.textContent = cur >= 0 ? STOPS[cur].num+' · '+STOPS[cur].name : 'Inicio';
+  }
+
+  // Reveal elements
+  document.querySelectorAll('.reveal:not(.vis)').forEach(function(el){
+    if (el.getBoundingClientRect().top < window.innerHeight * 0.88) el.classList.add('vis');
+  });
+}, { passive: true });
+
+// Initial reveal
+setTimeout(function(){
+  document.querySelectorAll('.reveal').forEach(function(el){
+    if (el.getBoundingClientRect().top < window.innerHeight * 0.88) el.classList.add('vis');
+  });
+}, 200);
+</script>
+</body>
+</html>
