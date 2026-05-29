@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="description" content="Visita guiada interactiva por Córdoba con audioguías, mapa y gastronomía">
+<meta name="referrer" content="no-referrer">
 <title>Córdoba · Visita Guiada</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -165,9 +166,10 @@ img { display: block; max-width: 100%; }
 }
 .leg-item {
   display: flex; align-items: center; gap: 0.4rem;
-  font-size: 0.78rem; color: var(--parch); opacity: 0.75;
+  font-size: 0.78rem; color: var(--parch); opacity: 0.85;
   padding: 0.28rem 0.8rem; border: 1px solid var(--border);
   cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em;
+  background: var(--card);
 }
 .leg-item:hover { border-color: var(--gold); color: var(--gold); opacity: 1; }
 .leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -375,7 +377,7 @@ img { display: block; max-width: 100%; }
 <!-- Lightbox -->
 <div id="lightbox">
   <button id="lb-close" onclick="closeLB()">✕</button>
-  <img id="lb-img" src="" alt="">
+  <img id="lb-img" src="" alt="" referrerpolicy="no-referrer">
 </div>
 
 <main>
@@ -674,7 +676,7 @@ function buildGallery(stop, si) {
   if (stop.gallery.length < 2) return '';
   return '<div class="gallery-strip">' +
     stop.gallery.map(function(g, gi) {
-      return '<img class="g-thumb'+(gi===0?' active':'')+'" src="'+g+'" loading="lazy" alt="" ' +
+      return '<img class="g-thumb'+(gi===0?' active':'')+'" src="'+g+'" loading="lazy" referrerpolicy="no-referrer" alt="" ' +
         'onclick="switchImg('+si+',\''+g+'\',this)">';
     }).join('') + '</div>';
 }
@@ -736,7 +738,7 @@ function buildStop(stop, si) {
   var imgClick = 'openLB("'+stop.img+'")';
   return '<section class="stop-section" id="'+stop.id+'" data-si="'+si+'">' +
     '<div class="stop-img-panel">' +
-      '<img id="main-img-'+si+'" src="'+stop.img+'" loading="lazy" alt="'+stop.name+'" onclick="'+imgClick+'">' +
+      '<img id="main-img-'+si+'" src="'+stop.img+'" loading="lazy" referrerpolicy="no-referrer" alt="'+stop.name+'" onclick="'+imgClick+'">' +
       '<div class="stop-img-overlay"></div>' +
       '<div class="stop-badge">' +
         '<div class="stop-num">'+stop.num+'</div>' +
@@ -763,7 +765,7 @@ function buildStop(stop, si) {
 document.getElementById('stops-root').innerHTML = STOPS.map(function(s,i){ return buildStop(s,i); }).join('');
 
 // ── MAP ──────────────────────────────────────────────────────────────────────
-var map = L.map('tour-map', { center:[37.882,-4.779], zoom:14, scrollWheelZoom:false });
+var map = L.map('tour-map', { center:[37.882,-4.779], zoom:13, scrollWheelZoom:false });
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
   subdomains:'abcd', maxZoom:19
@@ -828,14 +830,18 @@ function jumpTo(fromSi, toSi) {
 }
 
 function switchImg(si, src, thumb) {
-  document.getElementById('main-img-'+si).src = src;
+  var img = document.getElementById('main-img-'+si);
+  img.src = src;
+  img.setAttribute('referrerpolicy','no-referrer');
   var panel = document.getElementById(STOPS[si].id).querySelector('.stop-img-panel');
   panel.querySelectorAll('.g-thumb').forEach(function(t){ t.classList.remove('active'); });
   thumb.classList.add('active');
 }
 
 function openLB(src) {
-  document.getElementById('lb-img').src = src;
+  var img = document.getElementById('lb-img');
+  img.src = src;
+  img.setAttribute('referrerpolicy','no-referrer');
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLB() { document.getElementById('lightbox').classList.remove('open'); }
