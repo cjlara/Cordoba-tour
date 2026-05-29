@@ -1,10 +1,8 @@
-// upload.js — saves photos to GitHub repo via API
-// Env vars needed: GITHUB_TOKEN, GITHUB_REPO (e.g. "cjlara/cordoba-tour")
-
+// upload.js — saves/deletes photos in GitHub repo /photos/ folder
 const https = require("https");
 
-const REPO   = process.env.GITHUB_REPO  || "";
-const GTOKEN = process.env.GITHUB_TOKEN || "";
+const REPO   = process.env.GITHUB_REPO   || "";
+const GTOKEN = process.env.GITHUB_TOKEN  || "";
 const BRANCH = process.env.GITHUB_BRANCH || "main";
 
 exports.handler = async function (event) {
@@ -21,69 +19,85 @@ exports.handler = async function (event) {
 
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors, body: "" };
 
-  // Auth
   const token = (event.headers["x-admin-token"] || "").trim();
   const expected = (process.env.ADMIN_TOKEN || "cordoba2025").trim();
   if (token !== expected) return json(401, { error: "Token incorrecto" });
 
   if (!REPO || !GTOKEN) return json(500, {
-    error: "Variables de entorno faltantes: GITHUB_REPO y/o GITHUB_TOKEN no configuradas en Netlify"
+    error: "Falta GITHUB_TOKEN o GITHUB_REPO en las variables de entorno de Netlify"
   });
 
   let body;
-  try { body = JSON.parse(event.body); }
-  catch { return json(400, { error: "JSON inválido" }); }
+  try { body = JSON.parse(event.body); } catch { return json(400, { error: "JSON inválido" }); }
 
   const { key, data, mime } = body || {};
 
+  // ── FIND existing file for a key (any extension) ───────────────────────────
+  async function findExisting(key) {
+    try {
+      const files = await ghRequest("GET", "/repos/" + REPO + "/contents/photos?ref=" + BRANCH, null);
+      if (!Array.isArray(files)) return null;
+      const match = files.find(f => f.name.replace(/\.[^.]+$/, "") === key);
+      return match || null; // { name, sha, path, download_url }
+    } catch (e) {
+      return null; // folder doesn't exist yet
+    }
+  }
+
+  // ── DELETE ─────────────────────────────────────────────────────────────────
   if (event.httpMethod === "DELETE") {
     if (!key || !/^[a-z0-9_-]+$/.test(key)) return json(400, { error: "Key inválida" });
     try {
-      const ext = extFromMime(mime || "image/jpeg");
-      const path = "photos/" + key + "." + ext;
-      // Get current SHA to delete
-      const info = await ghRequest("GET", "/repos/" + REPO + "/contents/" + path, null);
-      if (info.sha) {
-        await ghRequest("DELETE", "/repos/" + REPO + "/contents/" + path, {
-          message: "Remove photo: " + key,
-          sha: info.sha,
-          branch: BRANCH,
-        });
-      }
+      const existing = await findExisting(key);
+      if (!existing) return json(200, { ok: true, note: "Fichero no encontrado, ya eliminado" });
+      await ghRequest("DELETE", "/repos/" + REPO + "/contents/" + existing.path, {
+        message: "Remove photo: " + key,
+        sha: existing.sha,
+        branch: BRANCH,
+      });
       return json(200, { ok: true });
     } catch (err) {
-      if (err.status === 404) return json(200, { ok: true }); // already gone
       return json(500, { error: err.message });
     }
   }
 
+  // ── UPLOAD / REPLACE ───────────────────────────────────────────────────────
   if (event.httpMethod === "POST") {
     if (!key || !data || !mime) return json(400, { error: "Faltan key, data o mime" });
-    if (!/^[a-z0-9_-]+$/.test(key)) return json(400, { error: "Key inválida (solo a-z, 0-9, - _)" });
+    if (!/^[a-z0-9_-]+$/.test(key)) return json(400, { error: "Key inválida" });
 
     const buf = Buffer.from(data, "base64");
     if (buf.length > 8 * 1024 * 1024) return json(413, { error: "Foto demasiado grande (máx 8MB)" });
 
-    const ext = extFromMime(mime);
-    const path = "photos/" + key + "." + ext;
+    const ext = ({ "image/jpeg":"jpg","image/jpg":"jpg","image/png":"png","image/webp":"webp" })[mime] || "jpg";
+    const newPath = "photos/" + key + "." + ext;
 
     try {
-      // Check if file already exists (need SHA to update)
-      let sha = null;
-      try {
-        const existing = await ghRequest("GET", "/repos/" + REPO + "/contents/" + path, null);
-        sha = existing.sha || null;
-      } catch (e) { /* file doesn't exist yet, sha stays null */ }
+      // If a file with this key already exists (possibly different extension), delete it first
+      const existing = await findExisting(key);
+      if (existing && existing.path !== newPath) {
+        // Different extension — delete old file before writing new one
+        await ghRequest("DELETE", "/repos/" + REPO + "/contents/" + existing.path, {
+          message: "Replace photo: " + key + " (old: " + existing.name + ")",
+          sha: existing.sha,
+          branch: BRANCH,
+        });
+      }
 
+      // Now create or update the file at the new path
       const payload = {
-        message: (sha ? "Update" : "Add") + " photo: " + key,
-        content: data,  // base64
+        message: "Add photo: " + key,
+        content: data,
         branch: BRANCH,
       };
-      if (sha) payload.sha = sha;
+      // If same path exists, include sha to update in place
+      if (existing && existing.path === newPath) {
+        payload.message = "Update photo: " + key;
+        payload.sha = existing.sha;
+      }
 
-      await ghRequest("PUT", "/repos/" + REPO + "/contents/" + path, payload);
-      return json(200, { ok: true, key, path, bytes: buf.length });
+      await ghRequest("PUT", "/repos/" + REPO + "/contents/" + newPath, payload);
+      return json(200, { ok: true, key, path: newPath, bytes: buf.length });
 
     } catch (err) {
       return json(500, { error: err.message });
@@ -93,18 +107,13 @@ exports.handler = async function (event) {
   return json(405, { error: "Método no permitido" });
 };
 
-function extFromMime(mime) {
-  const map = { "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png", "image/webp": "webp" };
-  return map[mime] || "jpg";
-}
-
 function ghRequest(method, path, body) {
   return new Promise((resolve, reject) => {
     const payload = body ? JSON.stringify(body) : null;
     const opts = {
       hostname: "api.github.com",
-      path: path,
-      method: method,
+      path,
+      method,
       headers: {
         "User-Agent": "cordoba-tour-app",
         "Authorization": "Bearer " + GTOKEN,
@@ -114,15 +123,14 @@ function ghRequest(method, path, body) {
       },
     };
     if (payload) opts.headers["Content-Length"] = Buffer.byteLength(payload);
-
     const req = https.request(opts, (res) => {
-      let data = "";
-      res.on("data", c => data += c);
+      let d = "";
+      res.on("data", c => d += c);
       res.on("end", () => {
         try {
-          const parsed = JSON.parse(data);
+          const parsed = JSON.parse(d);
           if (res.statusCode >= 400) {
-            const err = new Error(parsed.message || "GitHub API error " + res.statusCode);
+            const err = new Error(parsed.message || "GitHub API " + res.statusCode);
             err.status = res.statusCode;
             return reject(err);
           }
