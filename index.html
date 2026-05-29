@@ -101,11 +101,12 @@ img { display: block; max-width: 100%; }
 }
 #hero-bg {
   position: absolute; inset: 0;
-  background: url('/.netlify/functions/img?url=https%3A%2F%2Fupload.wikimedia.org%2Fwikipedia%2Fcommons%2Fthumb%2Fa%2Fa0%2FCordoba_mezquita_kathedrale_nacht.jpg%2F1280px-Cordoba_mezquita_kathedrale_nacht.jpg')
-    center / cover no-repeat;
+  background: radial-gradient(ellipse at center, #2a1505 0%, #050208 100%);
+  background-size: cover; background-position: center;
   filter: brightness(0.28) saturate(0.7);
   transform: scale(1.04);
   animation: slowzoom 20s ease-in-out infinite alternate;
+  transition: background-image 0.5s ease;
 }
 @keyframes slowzoom { from { transform: scale(1.04); } to { transform: scale(1.12); } }
 #hero-vignette {
@@ -510,8 +511,8 @@ img { display: block; max-width: 100%; }
     <h1 class="hero-title">La Ciudad<br><em>Califal</em></h1>
     <p class="hero-desc">Donde el Imperio Romano, el Califato de Al‑Ándalus y la Corona de Castilla se fundieron durante siglos para crear uno de los centros culturales más brillantes de la historia humana.</p>
     <div class="hero-ctas">
-      <button class="cta" onclick="scrollTo('map-section')">▼ Ver ruta en el mapa</button>
-      <button class="cta sec" onclick="scrollTo('stop-0')">▶ Comenzar visita</button>
+      <button class="cta" onclick="goTo('map-section')">▼ Ver ruta en el mapa</button>
+      <button class="cta sec" onclick="goTo('stop-0')">▶ Comenzar visita</button>
     </div>
   </div>
 </section>
@@ -525,7 +526,7 @@ img { display: block; max-width: 100%; }
   <div id="tour-map"></div>
   <div id="map-legend"></div>
   <div class="map-cta-wrap" style="margin-top:2rem">
-    <button class="btn primary" onclick="scrollTo('stop-0')">▶ Comenzar la visita guiada</button>
+    <button class="btn primary" onclick="goTo('stop-0')">▶ Comenzar la visita guiada</button>
   </div>
 </section>
 
@@ -870,7 +871,7 @@ function buildNavBtns(si) {
   var prev = si > 0 ? '<button class="btn" onclick="jumpTo('+si+','+(si-1)+')">← '+STOPS[si-1].name.split(' ')[0]+'</button>' : '';
   var next = si < STOPS.length-1
     ? '<button class="btn primary" onclick="jumpTo('+si+','+(si+1)+')">'+STOPS[si+1].name.split(' ')[0]+' →</button>'
-    : '<button class="btn primary" onclick="scrollTo(\'hero\')">↑ Inicio</button>';
+    : '<button class="btn primary" onclick="goTo(&apos;hero&apos;)">↑ Inicio</button>';
   return '<div class="stop-nav">'+prev+next+'</div>';
 }
 
@@ -906,7 +907,9 @@ function buildStop(stop, si) {
 document.getElementById('stops-root').innerHTML = STOPS.map(function(s,i){ return buildStop(s,i); }).join('');
 
 // ── MAP ──────────────────────────────────────────────────────────────────────
-var map = L.map('tour-map', { center:[37.882,-4.779], zoom:13, scrollWheelZoom:false });
+var map;
+try {
+  map = L.map('tour-map', { center:[37.882,-4.779], zoom:13, scrollWheelZoom:false });
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
   subdomains:'abcd', maxZoom:19
@@ -927,12 +930,11 @@ STOPS.forEach(function(s, i) {
   var marker = L.marker([s.lat,s.lng],{icon:icon}).addTo(map);
   marker.bindPopup(
     '<div style="font-family:Georgia,serif;">' +
-    '<div style="font-size:0.65rem;letter-spacing:0.2em;color:'+s.color+';text-transform:uppercase;margin-bottom:0.2rem;">'+s.time+'h · '+s.dur+'</div>' +
-    '<div style="font-size:1rem;font-weight:600;margin-bottom:0.15rem;">'+s.name+'</div>' +
-    '<div style="font-size:0.78rem;opacity:0.65;margin-bottom:0.5rem;font-style:italic;">'+s.sub.slice(0,50)+'…</div>' +
-    '<a onclick="scrollTo(\''+s.id+'\')" style="color:'+s.color+';font-size:0.8rem;cursor:pointer;letter-spacing:0.05em;">Ver detalle →</a>' +
+    '<div style="font-size:0.65rem;letter-spacing:0.2em;color:' + s.color + ';text-transform:uppercase;margin-bottom:0.2rem;">' + s.time + 'h</div>' +
+    '<div style="font-size:1rem;font-weight:600;margin-bottom:0.4rem;">' + s.name + '</div>' +
+    '<button onclick="goTo(\'' + s.id + '\')" style="background:' + s.color + ';border:none;color:#0D1117;font-size:0.75rem;padding:0.3rem 0.7rem;cursor:pointer;letter-spacing:0.05em;">Ver parada →</button>' +
     '</div>',
-    { maxWidth:220 }
+    { maxWidth:200 }
   );
 });
 
@@ -942,9 +944,14 @@ STOPS.forEach(function(s,i) {
   var item = document.createElement('button');
   item.className = 'leg-item';
   item.innerHTML = '<div class="leg-dot" style="background:'+s.color+'"></div>'+s.num+' · '+s.name;
-  item.onclick = function(){ scrollTo(s.id); };
+  item.onclick = function(){ goTo(s.id); };
   legend.appendChild(item);
 });
+
+} catch(mapErr) {
+  console.error('Map init error:', mapErr);
+  document.getElementById('tour-map').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--parch);opacity:0.5;font-style:italic;">Mapa no disponible</div>';
+}
 
 // ── SIDE NAV ─────────────────────────────────────────────────────────────────
 var sideNav = document.getElementById('side-nav');
@@ -952,12 +959,12 @@ STOPS.forEach(function(s,i) {
   var dot = document.createElement('button');
   dot.className = 'nav-dot';
   dot.setAttribute('data-label', s.time+'h · '+s.name);
-  dot.onclick = function(){ scrollTo(s.id); };
+  dot.onclick = function(){ goTo(s.id); };
   sideNav.appendChild(dot);
 });
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-function scrollTo(id) {
+function goTo(id) {
   var el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior:'smooth' });
 }
@@ -967,7 +974,7 @@ function jumpTo(fromSi, toSi) {
     synth.cancel(); audioState.status='idle'; audioState.idx=-1;
     setBtn(fromSi,'idle');
   }
-  scrollTo(STOPS[toSi].id);
+  goTo(STOPS[toSi].id);
 }
 
 function switchImg(si, src, thumb) {
@@ -986,6 +993,17 @@ function closeLB() { document.getElementById('lightbox').classList.remove('open'
 document.getElementById('lightbox').addEventListener('click', function(e){ if(e.target===this) closeLB(); });
 
 // ── SCROLL HANDLER ─────────────────────────────────────────────────────────
+// Set hero background via proxy (more reliable than CSS url() with proxy)
+window.addEventListener('load', function() {
+  var heroBg = document.getElementById('hero-bg');
+  var heroUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Cordoba_mezquita_kathedrale_nacht.jpg/1280px-Cordoba_mezquita_kathedrale_nacht.jpg';
+  var img = new Image();
+  img.onload = function() {
+    heroBg.style.backgroundImage = "url('" + pimg(heroUrl) + "')";
+  };
+  img.src = pimg(heroUrl);
+});
+
 var dots, counterEl, fillEl;
 window.addEventListener('DOMContentLoaded', function(){
   dots = document.querySelectorAll('.nav-dot');
@@ -1065,62 +1083,45 @@ window.addEventListener('popstate', function() {
 });
 
 async function generateDetail(stop) {
-  var systemPrompt = "Eres un historiador experto y guía turístico de Córdoba, España. Generas contenido HTML rico para una guía turística de alta calidad. Responde SOLO con el HTML pedido, sin markdown, sin bloques de código, sin comentarios extra.";
+  var systemPrompt = "Eres un historiador experto y guia turistica de Cordoba, Espana. Generas contenido HTML rico para una guia turistica de alta calidad. Responde SOLO con el HTML pedido, sin markdown, sin bloques de codigo, sin comentarios extra.";
 
-  var userPrompt = "Genera contenido HTML detallado para la atracción turística: " + stop.name + " en Córdoba.
-
-" +
-    "Contexto básico: " + stop.desc + "
-
-" +
-    "Genera exactamente esta estructura HTML (usa las clases indicadas):
-
-" +
-
-    "1. Una sección <div class='detail-section'> con <div class='detail-section-title'>📖 Historia profunda</div> y 3-4 párrafos <p> detallados en <div class='detail-text'>. Incluye fechas, nombres, contexto político y cultural.
-
-" +
-
-    "2. Una sección <div class='detail-section'> con título '🎭 Anécdotas y curiosidades' que contenga 2-3 <div class='anecdote-card'> cada una con <div class='anecdote-title'>ANÉCDOTA</div> y <div class='anecdote-text'>texto de la anécdota</div>
-
-" +
-
-    "3. Una sección <div class='detail-section'> con título '📊 Datos y cifras' que contenga una <div class='infographic'> con 4 <div class='info-box'> cada uno con <span class='info-box-icon'>emoji</span> <span class='info-box-val'>valor</span> <div class='info-box-lbl'>etiqueta</div>
-
-" +
-
-    "4. Una sección <div class='detail-section'> con título '⏳ Línea del tiempo' que contenga una <div class='timeline'> con 5-7 <div class='tl-item'> cada uno con estructura: <div class='tl-left'><div class='tl-year'>AÑO</div><div class='tl-dot'></div><div class='tl-line'></div></div><div class='tl-content'><div class='tl-event'>evento</div><div class='tl-detail'>detalle</div></div>
-
-" +
-
-    "5. Una sección <div class='detail-section'> con título '🔮 Curiosidades ocultas' con 3-4 párrafos sobre detalles poco conocidos, simbolismo oculto, leyendas locales.
-
-" +
-
-    "Genera el HTML completo, rico en contenido histórico preciso sobre " + stop.name + ". Todo en español.";
+  var prompt = "Genera contenido HTML detallado en espanol para: " + stop.name + " en Cordoba. " +
+    "Contexto: " + stop.desc.substring(0, 200) + ". " +
+    "Genera exactamente esta estructura HTML usando estas clases CSS disponibles: " +
+    "1) <div class='detail-section'><div class='detail-section-title'>Historia profunda</div><div class='detail-text'><p>...</p><p>...</p><p>...</p></div></div> " +
+    "2) <div class='detail-section'><div class='detail-section-title'>Anecdotas y curiosidades</div>" +
+    "<div class='anecdote-card'><div class='anecdote-title'>ANECDOTA</div><div class='anecdote-text'>...</div></div>" +
+    "<div class='anecdote-card'><div class='anecdote-title'>CURIOSIDAD</div><div class='anecdote-text'>...</div></div></div> " +
+    "3) <div class='detail-section'><div class='detail-section-title'>Datos y cifras</div>" +
+    "<div class='infographic'>" +
+    "<div class='info-box'><span class='info-box-icon'>emoji</span><span class='info-box-val'>valor</span><div class='info-box-lbl'>etiqueta</div></div>" +
+    "<div class='info-box'>...</div><div class='info-box'>...</div><div class='info-box'>...</div>" +
+    "</div></div> " +
+    "4) <div class='detail-section'><div class='detail-section-title'>Linea del tiempo</div><div class='timeline'>" +
+    "<div class='tl-item'><div class='tl-left'><div class='tl-year'>AÑO</div><div class='tl-dot'></div><div class='tl-line'></div></div><div class='tl-content'><div class='tl-event'>evento</div><div class='tl-detail'>detalle</div></div></div>" +
+    "</div></div> " +
+    "5) <div class='detail-section'><div class='detail-section-title'>Curiosidades ocultas</div><div class='detail-text'><p>...</p><p>...</p></div></div> " +
+    "Genera HTML completo y rico con datos historicos precisos sobre " + stop.name + " en Cordoba. Todo en espanol correcto.";
 
   var resp = await fetch('/.netlify/functions/claude', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
+      messages: [{ role: 'user', content: prompt }]
     })
   });
 
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
   var data = await resp.json();
 
-  // Extract text from Claude response
   var text = '';
   if (data.content && data.content.length > 0) {
     text = data.content.filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
   }
-  if (!text) throw new Error('Respuesta vacía de la API');
+  if (!text) throw new Error('Respuesta vacia de la API');
 
-  // Strip any accidental markdown code fences
   text = text.replace(/^```html\n?/i, '').replace(/^```\n?/i, '').replace(/```$/m, '').trim();
-
   return text;
 }
 
