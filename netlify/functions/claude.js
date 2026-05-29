@@ -51,7 +51,7 @@ function callClaude(apiKey, messages, system) {
     const payload = JSON.stringify({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1500,
-      system: system || "Eres un experto historiador y guÃ­a turÃ­stico de CÃ³rdoba, EspaÃ±a.",
+      system: system || "Eres un experto historiador y guía turístico de Córdoba, España.",
       messages,
     });
 
