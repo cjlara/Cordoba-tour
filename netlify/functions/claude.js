@@ -49,8 +49,8 @@ function corsHeaders() {
 function callClaude(apiKey, messages, system) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1500,
+      model: "claude-sonnet-4-5",
+      max_tokens: 3000,
       system: system || "Eres un experto historiador y guía turístico de Córdoba, España.",
       messages,
     });
