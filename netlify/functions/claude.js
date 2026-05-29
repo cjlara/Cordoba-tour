@@ -2,13 +2,8 @@ const https = require("https");
 
 exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers: corsHeaders(),
-      body: "",
-    };
+    return { statusCode: 200, headers: corsHeaders(), body: "" };
   }
-
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: corsHeaders(), body: "Method not allowed" };
   }
@@ -22,7 +17,7 @@ exports.handler = async function (event) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, headers: corsHeaders(), body: "API key not configured" };
+    return { statusCode: 500, headers: corsHeaders(), body: JSON.stringify({ error: { message: "ANTHROPIC_API_KEY no configurada en Netlify" } }) };
   }
 
   try {
@@ -34,7 +29,11 @@ exports.handler = async function (event) {
     };
   } catch (err) {
     console.error("claude proxy error:", err.message);
-    return { statusCode: 502, headers: corsHeaders(), body: err.message };
+    return {
+      statusCode: 200, // return 200 so frontend can parse the error JSON
+      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ error: { message: err.message } }),
+    };
   }
 };
 
@@ -49,9 +48,9 @@ function corsHeaders() {
 function callClaude(apiKey, messages, system) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify({
-      model: "claude-sonnet-4-5",
+      model: "claude-opus-4-5",
       max_tokens: 3000,
-      system: system || "Eres un experto historiador y guía turístico de Córdoba, España.",
+      system: system || "Eres un experto historiador y guia turistica de Cordoba, Espana.",
       messages,
     });
 
@@ -72,16 +71,17 @@ function callClaude(apiKey, messages, system) {
         res.on("data", (c) => (data += c));
         res.on("end", () => {
           try {
-            resolve(JSON.parse(data));
+            const parsed = JSON.parse(data);
+            resolve(parsed);
           } catch (e) {
-            reject(new Error("Parse error: " + data.slice(0, 200)));
+            reject(new Error("Parse error: " + data.slice(0, 300)));
           }
         });
       }
     );
 
     req.on("error", reject);
-    req.setTimeout(30000, () => { req.destroy(); reject(new Error("Timeout")); });
+    req.setTimeout(30000, () => { req.destroy(); reject(new Error("Timeout tras 30s")); });
     req.write(payload);
     req.end();
   });
