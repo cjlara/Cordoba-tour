@@ -1,7 +1,6 @@
 {
   "name": "cordoba-tour",
   "version": "1.0.0",
-  "dependencies": {
-    "@netlify/blobs": "^8.1.0"
-  }
+  "description": "Córdoba interactive tour",
+  "dependencies": {}
 }

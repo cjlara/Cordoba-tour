@@ -173,9 +173,11 @@ button{font-family:var(--serif);cursor:pointer;}
 <!-- ADMIN MAIN -->
 <div id="admin-main">
   <div class="info-banner">
-    <strong>Cómo funciona:</strong> sube tus fotos para cada parada. Las fotos se guardan en Netlify Blobs
-    y la guía las carga automáticamente. Formatos: JPG, PNG, WebP. Máximo <strong>8MB</strong> por foto.
-    La foto principal es la primera de cada parada. Puedes subir hasta 4 fotos por parada.
+    <strong>Cómo funciona:</strong> sube tus fotos para cada parada. Se guardan en tu repo de GitHub
+    en la carpeta <strong>/photos/</strong> y la guía las usa automáticamente. Formatos: JPG, PNG, WebP. Máx <strong>8MB</strong>.<br><br>
+    <strong>Necesitas configurar en Netlify → Environment variables:</strong><br>
+    · <strong>GITHUB_TOKEN</strong> — token personal de GitHub con permiso <em>repo</em><br>
+    · <strong>GITHUB_REPO</strong> — tu repo, p.ej. <em>cjlara/cordoba-tour</em>
   </div>
 
   <!-- HERO -->
