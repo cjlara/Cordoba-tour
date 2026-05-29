@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Córdoba Tour</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#C9A84C; --gold2:#E8C97A; --ivory:#F5EFE0; --parch:#EDE3C8;
+  --terra:#B5541B; --ink:#0D1117; --card:#131920; --border:rgba(201,168,76,0.18);
+  --serif:'Cormorant Garamond',Georgia,serif; --display:'Playfair Display',Georgia,serif;
+}
+body{background:var(--ink);color:var(--ivory);font-family:var(--serif);font-size:16px;min-height:100vh;}
+a{color:var(--gold);text-decoration:none;}
+button{font-family:var(--serif);cursor:pointer;}
+
+/* HEADER */
+.admin-header{
+  background:var(--card);border-bottom:1px solid var(--border);
+  padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.admin-title{font-family:var(--display);font-size:1.2rem;color:var(--gold);}
+.admin-title span{color:var(--ivory);font-style:italic;font-size:0.9rem;}
+.back-btn{
+  border:1px solid var(--border);background:transparent;color:var(--parch);
+  font-size:0.8rem;letter-spacing:0.15em;text-transform:uppercase;padding:0.5rem 1rem;
+  transition:all 0.2s;
+}
+.back-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+/* LOGIN */
+#login-screen{
+  display:flex;align-items:center;justify-content:center;min-height:80vh;
+}
+.login-box{
+  background:var(--card);border:1px solid var(--border);padding:2.5rem;
+  max-width:360px;width:100%;text-align:center;
+}
+.login-title{font-family:var(--display);font-size:1.6rem;color:var(--gold);margin-bottom:0.4rem;}
+.login-sub{font-style:italic;color:var(--parch);opacity:0.6;margin-bottom:1.8rem;font-size:0.9rem;}
+.login-input{
+  width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  color:var(--ivory);font-family:var(--serif);font-size:1rem;padding:0.75rem 1rem;
+  margin-bottom:1rem;outline:none;
+}
+.login-input:focus{border-color:var(--gold);}
+.login-btn{
+  width:100%;background:var(--gold);border:none;color:var(--ink);
+  font-family:var(--display);font-size:1rem;font-weight:700;letter-spacing:0.2em;
+  text-transform:uppercase;padding:0.85rem;cursor:pointer;transition:background 0.2s;
+}
+.login-btn:hover{background:var(--gold2);}
+.login-error{color:#e84040;font-size:0.85rem;margin-top:0.8rem;display:none;}
+
+/* MAIN ADMIN */
+#admin-main{display:none;padding:1.5rem;}
+.section-title{
+  font-family:var(--display);font-size:0.72rem;letter-spacing:0.5em;
+  text-transform:uppercase;color:var(--terra);margin-bottom:1.2rem;
+}
+
+/* STOP CARDS */
+.stops-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.2rem;margin-bottom:2rem;}
+.stop-card{background:var(--card);border:1px solid var(--border);padding:1.2rem;}
+.stop-card-header{display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;}
+.stop-num-badge{
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:0.8rem;color:var(--ink);flex-shrink:0;
+}
+.stop-card-name{font-family:var(--display);font-size:1rem;color:var(--ivory);}
+.stop-card-cat{font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;opacity:0.5;margin-top:0.1rem;}
+
+/* Photo slots */
+.photo-slots{display:flex;flex-direction:column;gap:0.6rem;}
+.photo-slot{
+  display:flex;align-items:center;gap:0.8rem;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);padding:0.6rem;
+}
+.slot-preview{
+  width:64px;height:48px;object-fit:cover;flex-shrink:0;
+  background:rgba(255,255,255,0.05);border:1px dashed var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;color:var(--border);cursor:pointer;
+  position:relative;overflow:hidden;
+}
+.slot-preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.slot-preview.has-photo{border-style:solid;border-color:var(--gold);}
+.slot-info{flex:1;min-width:0;}
+.slot-key{font-size:0.72rem;letter-spacing:0.15em;color:var(--gold);text-transform:uppercase;}
+.slot-status{font-size:0.75rem;color:var(--parch);opacity:0.5;font-style:italic;margin-top:0.1rem;}
+.slot-actions{display:flex;gap:0.4rem;flex-shrink:0;}
+.btn-upload-slot{
+  background:transparent;border:1px solid var(--gold);color:var(--gold);
+  font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.3rem 0.7rem;
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;
+}
+.btn-upload-slot:hover{background:var(--gold);color:var(--ink);}
+.btn-delete-slot{
+  background:transparent;border:1px solid rgba(232,64,64,0.3);color:rgba(232,64,64,0.6);
+  font-size:0.72rem;padding:0.3rem 0.6rem;cursor:pointer;transition:all 0.2s;
+}
+.btn-delete-slot:hover{border-color:#e84040;color:#e84040;}
+.btn-delete-slot:disabled,.btn-upload-slot:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* HERO section */
+.hero-section{
+  background:var(--card);border:1px solid var(--border);padding:1.4rem;margin-bottom:1.5rem;
+}
+.hero-section-header{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;}
+.hero-preview{
+  width:120px;height:70px;object-fit:cover;flex-shrink:0;
+  background:rgba(255,255,255,0.05);border:1px dashed var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+  position:relative;overflow:hidden;cursor:pointer;
+}
+.hero-preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.hero-preview.has-photo{border-style:solid;border-color:var(--gold);}
+.hero-info h3{font-family:var(--display);font-size:1rem;color:var(--ivory);}
+.hero-info p{font-size:0.82rem;color:var(--parch);opacity:0.6;margin-top:0.2rem;font-style:italic;}
+.hero-actions{display:flex;gap:0.6rem;margin-top:0.8rem;}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  background:var(--card);border:1px solid var(--border);
+  padding:0.8rem 1.2rem;font-size:0.88rem;z-index:999;
+  opacity:0;transform:translateY(10px);transition:all 0.3s;
+  max-width:300px;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.ok{border-color:var(--gold);color:var(--gold);}
+#toast.err{border-color:#e84040;color:#e84040;}
+
+/* PROGRESS */
+.upload-progress{
+  height:2px;background:var(--border);margin-top:0.4rem;display:none;
+}
+.upload-progress-fill{height:100%;background:var(--gold);width:0%;transition:width 0.2s;}
+
+/* Hidden file input */
+#file-input{display:none;}
+
+/* Info banner */
+.info-banner{
+  background:rgba(201,168,76,0.06);border:1px solid var(--border);
+  border-left:3px solid var(--gold);padding:0.9rem 1.1rem;margin-bottom:1.5rem;
+  font-size:0.88rem;color:var(--parch);line-height:1.6;
+}
+.info-banner strong{color:var(--gold);}
+</style>
+</head>
+<body>
+
+<header class="admin-header">
+  <div class="admin-title">Córdoba Tour <span>· Panel de Administración</span></div>
+  <a href="/" class="back-btn">← Volver a la guía</a>
+</header>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-title">Panel Admin</div>
+    <div class="login-sub">Sube tus propias fotos para cada parada</div>
+    <input type="password" class="login-input" id="token-input" placeholder="Contraseña de administrador" onkeydown="if(event.key==='Enter')login()">
+    <button class="login-btn" onclick="login()">Entrar</button>
+    <div class="login-error" id="login-error">Contraseña incorrecta</div>
+  </div>
+</div>
+
+<!-- ADMIN MAIN -->
+<div id="admin-main">
+  <div class="info-banner">
+    <strong>Cómo funciona:</strong> sube tus fotos para cada parada. Las fotos se guardan en Netlify Blobs
+    y la guía las carga automáticamente. Formatos: JPG, PNG, WebP. Máximo <strong>8MB</strong> por foto.
+    La foto principal es la primera de cada parada. Puedes subir hasta 4 fotos por parada.
+  </div>
+
+  <!-- HERO -->
+  <div class="section-title">Imagen de portada (Hero)</div>
+  <div class="hero-section">
+    <div class="hero-section-header">
+      <div class="hero-preview" id="hero-preview" onclick="triggerUpload('hero')">🌆</div>
+      <div class="hero-info">
+        <h3>Foto de portada</h3>
+        <p>La imagen de fondo de la pantalla de inicio. Recomendado: foto nocturna de Córdoba, formato apaisado.</p>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <button class="btn-upload-slot" onclick="triggerUpload('hero')">⬆ Subir foto</button>
+      <button class="btn-delete-slot" id="hero-delete" onclick="deletePhoto('hero')" disabled>✕ Eliminar</button>
+    </div>
+  </div>
+
+  <!-- STOPS -->
+  <div class="section-title">Fotos por parada</div>
+  <div class="stops-grid" id="stops-grid"></div>
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" onchange="onFileSelected(event)">
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+var ADMIN_TOKEN = '';
+var CURRENT_SLOT = null;
+var UPLOADED = {};  // { key: url }
+
+var STOPS_META = [
+  {id:"stop-0", num:"01", name:"Mezquita-Catedral",       color:"#C9A84C", cat:"Monumento Emblema",       slots:["s0-1","s0-2","s0-3","s0-4"]},
+  {id:"stop-1", num:"02", name:"La Judería",              color:"#7A9E9F", cat:"Barrio Histórico",         slots:["s1-1","s1-2","s1-3"]},
+  {id:"stop-2", num:"03", name:"Alcázar Reyes Cristianos",color:"#8B5E3C", cat:"Fortaleza Real",           slots:["s2-1","s2-2"]},
+  {id:"stop-3", num:"04", name:"Taberna La Viuda",        color:"#B5541B", cat:"Gastronomía · Almuerzo",   slots:["s3-1","s3-2","s3-3"]},
+  {id:"stop-4", num:"05", name:"Puente Romano",           color:"#6B7FA3", cat:"Monumento Romano",         slots:["s4-1","s4-2"]},
+  {id:"stop-5", num:"06", name:"Palacio de Viana",        color:"#5A8A5E", cat:"Palacio Nobiliario",       slots:["s5-1","s5-2"]},
+  {id:"stop-6", num:"07", name:"Taberna de Almodovar",    color:"#B5541B", cat:"Gastronomía · Cena",       slots:["s6-1","s6-2"]},
+];
+
+// ── LOGIN ───────────────────────────────────────────────────────────────────
+function login() {
+  var val = document.getElementById('token-input').value.trim();
+  if (!val) return;
+  ADMIN_TOKEN = val;
+  // Try to load photos to verify token
+  loadPhotos(function(ok) {
+    if (ok) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-main').style.display = 'block';
+      buildUI();
+    } else {
+      document.getElementById('login-error').style.display = 'block';
+      ADMIN_TOKEN = '';
+    }
+  });
+}
+
+// ── LOAD EXISTING PHOTOS ─────────────────────────────────────────────────────
+function loadPhotos(cb) {
+  fetch('/.netlify/functions/photos')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      UPLOADED = data || {};
+      if (cb) cb(true);
+    })
+    .catch(function() { if (cb) cb(false); });
+}
+
+// ── BUILD UI ─────────────────────────────────────────────────────────────────
+function buildUI() {
+  // Hero
+  updateSlotUI('hero', document.getElementById('hero-preview'), document.getElementById('hero-delete'));
+
+  // Stops grid
+  var grid = document.getElementById('stops-grid');
+  grid.innerHTML = '';
+  STOPS_META.forEach(function(stop) {
+    var card = document.createElement('div');
+    card.className = 'stop-card';
+    card.innerHTML =
+      '<div class="stop-card-header">' +
+        '<div class="stop-num-badge" style="background:' + stop.color + '">' + stop.num + '</div>' +
+        '<div><div class="stop-card-name">' + stop.name + '</div>' +
+        '<div class="stop-card-cat">' + stop.cat + '</div></div>' +
+      '</div>' +
+      '<div class="photo-slots" id="slots-' + stop.id + '">' +
+        stop.slots.map(function(key, idx) {
+          return buildSlotHTML(key, idx === 0 ? 'Principal' : 'Galería ' + idx);
+        }).join('') +
+      '</div>';
+    grid.appendChild(card);
+  });
+}
+
+function buildSlotHTML(key, label) {
+  var hasPhoto = !!UPLOADED[key];
+  var previewSrc = hasPhoto ? UPLOADED[key] : '';
+  return '<div class="photo-slot" id="slot-' + key + '">' +
+    '<div class="slot-preview ' + (hasPhoto ? 'has-photo' : '') + '" id="prev-' + key + '" onclick="triggerUpload(\'' + key + '\')">' +
+      (hasPhoto ? '<img src="' + previewSrc + '" alt="">' : '📷') +
+    '</div>' +
+    '<div class="slot-info">' +
+      '<div class="slot-key">' + label + '</div>' +
+      '<div class="slot-status" id="status-' + key + '">' + (hasPhoto ? '✓ Foto subida' : 'Sin foto — usa la predeterminada') + '</div>' +
+    '</div>' +
+    '<div class="slot-actions">' +
+      '<button class="btn-upload-slot" id="ubtn-' + key + '" onclick="triggerUpload(\'' + key + '\')">⬆ Subir</button>' +
+      '<button class="btn-delete-slot" id="dbtn-' + key + '" onclick="deletePhoto(\'' + key + '\')" ' + (hasPhoto ? '' : 'disabled') + '>✕</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function updateSlotUI(key, previewEl, deleteBtnEl) {
+  var hasPhoto = !!UPLOADED[key];
+  if (!previewEl) previewEl = document.getElementById('prev-' + key);
+  if (!deleteBtnEl) deleteBtnEl = document.getElementById('dbtn-' + key);
+
+  if (previewEl) {
+    previewEl.className = 'slot-preview ' + (hasPhoto ? 'has-photo' : '');
+    previewEl.innerHTML = hasPhoto ? '<img src="' + UPLOADED[key] + '?t=' + Date.now() + '" alt="">' : '📷';
+  }
+  if (deleteBtnEl) deleteBtnEl.disabled = !hasPhoto;
+
+  var statusEl = document.getElementById('status-' + key);
+  if (statusEl) statusEl.textContent = hasPhoto ? '✓ Foto subida' : 'Sin foto — usa la predeterminada';
+}
+
+// ── UPLOAD ───────────────────────────────────────────────────────────────────
+function triggerUpload(key) {
+  CURRENT_SLOT = key;
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-input').click();
+}
+
+function onFileSelected(event) {
+  var file = event.target.files[0];
+  if (!file || !CURRENT_SLOT) return;
+
+  var key = CURRENT_SLOT;
+  var maxBytes = 8 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    showToast('La foto es demasiado grande (máx. 8MB)', 'err');
+    return;
+  }
+
+  setSlotLoading(key, true);
+  showToast('Subiendo foto…', 'ok');
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;  // data:image/jpeg;base64,...
+    var parts = dataUrl.split(',');
+    var mime = parts[0].replace('data:', '').replace(';base64', '');
+    var b64 = parts[1];
+
+    fetch('/.netlify/functions/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': ADMIN_TOKEN,
+      },
+      body: JSON.stringify({ key: key, data: b64, mime: mime }),
+    })
+    .then(function(r) {
+      if (!r.ok) return r.text().then(function(t){ throw new Error(t); });
+      return r.json();
+    })
+    .then(function(data) {
+      UPLOADED[key] = '/.netlify/functions/photo?key=' + key;
+      setSlotLoading(key, false);
+      updateSlotUI(key);
+      if (key === 'hero') updateSlotUI('hero', document.getElementById('hero-preview'), document.getElementById('hero-delete'));
+      showToast('✓ Foto subida correctamente', 'ok');
+    })
+    .catch(function(err) {
+      setSlotLoading(key, false);
+      showToast('Error al subir: ' + err.message, 'err');
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── DELETE ────────────────────────────────────────────────────────────────────
+function deletePhoto(key) {
+  if (!confirm('¿Eliminar esta foto? La parada volverá a usar la foto predeterminada.')) return;
+  setSlotLoading(key, true);
+
+  fetch('/.netlify/functions/upload', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN },
+    body: JSON.stringify({ key: key }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function() {
+    delete UPLOADED[key];
+    setSlotLoading(key, false);
+    updateSlotUI(key);
+    if (key === 'hero') updateSlotUI('hero', document.getElementById('hero-preview'), document.getElementById('hero-delete'));
+    showToast('Foto eliminada', 'ok');
+  })
+  .catch(function(err) {
+    setSlotLoading(key, false);
+    showToast('Error: ' + err.message, 'err');
+  });
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function setSlotLoading(key, loading) {
+  var ubtn = document.getElementById('ubtn-' + key);
+  var dbtn = document.getElementById('dbtn-' + key);
+  var status = document.getElementById('status-' + key);
+  if (ubtn) ubtn.disabled = loading;
+  if (dbtn) dbtn.disabled = loading;
+  if (status && loading) status.textContent = 'Subiendo…';
+}
+
+var toastTimer;
+function showToast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type || 'ok');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { el.className = ''; }, 3000);
+}
+
+// Hero special handling
+function updateSlotUI_hero() {
+  var hasPhoto = !!UPLOADED['hero'];
+  var prev = document.getElementById('hero-preview');
+  var del = document.getElementById('hero-delete');
+  prev.className = 'hero-preview ' + (hasPhoto ? 'has-photo' : '');
+  prev.innerHTML = hasPhoto ? '<img src="' + UPLOADED['hero'] + '?t=' + Date.now() + '" alt="">' : '🌆';
+  del.disabled = !hasPhoto;
+}
+</script>
+</body>
+</html>
