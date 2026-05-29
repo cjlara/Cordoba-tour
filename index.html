@@ -485,6 +485,21 @@ img { display: block; max-width: 100%; }
 <!-- Progress -->
 <div id="progress-bar"><div id="progress-fill"></div></div>
 
+<!-- Floating admin button - always visible -->
+<a href="/admin.html" id="admin-fab" style="
+  position:fixed; bottom:1.5rem; right:1.5rem; z-index:999;
+  background:rgba(13,17,23,0.95); border:1px solid var(--gold);
+  color:var(--gold); text-decoration:none;
+  font-family:var(--serif); font-size:0.75rem; letter-spacing:0.2em;
+  text-transform:uppercase; padding:0.7rem 1.1rem;
+  display:flex; align-items:center; gap:0.5rem;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  transition:all 0.2s;
+" onmouseover="this.style.background='var(--gold)';this.style.color='var(--ink)'" 
+   onmouseout="this.style.background='rgba(13,17,23,0.95)';this.style.color='var(--gold)'">
+  ⚙ Subir fotos
+</a>
+
 <!-- Header -->
 <header id="site-header">
   <div class="brand">Córdoba <span>· Al‑Ándalus</span></div>
@@ -1082,7 +1097,12 @@ async function openDetail(si) {
     detailCache[si] = html;
     body.innerHTML = html;
   } catch(e) {
-    body.innerHTML = '<div style="padding:2rem;color:var(--parch);font-style:italic;opacity:0.7;">No se pudo cargar el detalle. Verifica que la variable ANTHROPIC_API_KEY está configurada en Netlify.<br><br>Error: ' + e.message + '</div>';
+    body.innerHTML = '<div style="padding:2rem;">' +
+      '<div style="color:var(--terra);font-family:var(--display);font-size:1rem;margin-bottom:1rem;">Error al cargar el detalle</div>' +
+      '<div style="color:var(--parch);font-size:0.9rem;line-height:1.7;opacity:0.8;background:rgba(255,255,255,0.04);padding:1rem;border-left:2px solid var(--terra);">' +
+      e.message + '</div>' +
+      '<div style="color:var(--parch);opacity:0.5;font-size:0.8rem;margin-top:1rem;font-style:italic;">Si el error menciona el modelo o la API key, verifica la variable ANTHROPIC_API_KEY en Netlify → Site configuration → Environment variables</div>' +
+      '</div>';
   }
 }
 
