@@ -546,6 +546,22 @@ img { display: block; max-width: 100%; }
 .imm-wbar.on:nth-child(6){animation-delay:.2s}.imm-wbar.on:nth-child(7){animation-delay:.08s}
 .imm-wbar.on:nth-child(8){animation-delay:.24s}
 
+/* ── READ ALOUD BUTTONS ─────────────────────────────────────────────────── */
+.read-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: transparent; border: 1px solid rgba(201,168,76,0.25);
+  color: rgba(201,168,76,0.65); font-family: var(--serif);
+  font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.28rem 0.7rem; cursor: pointer; transition: all 0.2s;
+  margin-top: 0.6rem; border-radius: 2px;
+}
+.read-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.06); }
+.read-btn.reading { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+.read-btn .rb-wave { display: none; }
+.read-btn.reading .rb-wave { display: inline; animation: rbw 0.6s ease-in-out infinite; }
+.read-btn.reading .rb-play { display: none; }
+@keyframes rbw { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
 /* Open detail button */
 .btn-detail {
   display: inline-flex; align-items: center; gap: 0.5rem;
@@ -583,7 +599,7 @@ img { display: block; max-width: 100%; }
 <header id="site-header">
   <div style="display:flex;align-items:center;gap:0.8rem;">
     <div class="brand">Córdoba <span>· Al‑Ándalus</span></div>
-    <div style="font-size:0.6rem;background:var(--gold);color:var(--ink);padding:0.15rem 0.45rem;font-family:monospace;font-weight:700;letter-spacing:0.05em;border-radius:2px;">v2.6</div>
+    <div style="font-size:0.6rem;background:var(--gold);color:var(--ink);padding:0.15rem 0.45rem;font-family:monospace;font-weight:700;letter-spacing:0.05em;border-radius:2px;">v2.8</div>
   </div>
   <div style="display:flex;gap:1rem;align-items:center;">
     <div id="current-stop">Inicio</div>
@@ -639,7 +655,10 @@ img { display: block; max-width: 100%; }
   <div id="detail-header">
     <button id="detail-close" onclick="closeDetail()" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--parch);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     <div id="detail-stop-name" style="font-family:var(--display);font-size:1rem;color:var(--ivory);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-    <button onclick="openImmersive()" style="background:transparent;border:1px solid rgba(201,168,76,0.4);color:var(--gold);font-family:var(--serif);font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;padding:0.35rem 0.8rem;cursor:pointer;white-space:nowrap;">📖 Lectura</button>
+    <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+      <button id="detail-read-btn" onclick="toggleDetailRead()" style="background:transparent;border:1px solid rgba(201,168,76,0.4);color:var(--gold);font-family:var(--serif);font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;padding:0.35rem 0.8rem;cursor:pointer;white-space:nowrap;">🔊 Leer</button>
+      <button onclick="openImmersive()" style="background:transparent;border:1px solid rgba(201,168,76,0.4);color:var(--gold);font-family:var(--serif);font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;padding:0.35rem 0.8rem;cursor:pointer;white-space:nowrap;">📖 Inmersiva</button>
+    </div>
   </div>
   <div id="detail-body">
     <div class="detail-loading">
@@ -684,12 +703,19 @@ function applyPhotoOverrides() {
   STOPS.forEach(function(stop, si) {
     var mainImg = document.getElementById('main-img-' + si);
     var key0 = 's' + si + '-1';
-    if (mainImg && PHOTO_OVERRIDES[key0]) mainImg.src = PHOTO_OVERRIDES[key0];
+    if (mainImg && PHOTO_OVERRIDES[key0]) {
+      mainImg.src = PHOTO_OVERRIDES[key0];
+      // Update lightbox src too
+      mainImg.onclick = function() { openLB(PHOTO_OVERRIDES[key0]); };
+    }
+    // Update gallery thumbs — switchImg will read .src directly so just updating src is enough
+    var thumbs = document.querySelectorAll('#' + stop.id + ' .g-thumb');
     stop.gallery.forEach(function(_, gi) {
       var key = 's' + si + '-' + (gi + 1);
-      if (PHOTO_OVERRIDES[key]) {
-        var thumbs = document.querySelectorAll('#' + stop.id + ' .g-thumb');
-        if (thumbs[gi]) thumbs[gi].src = PHOTO_OVERRIDES[key];
+      if (PHOTO_OVERRIDES[key] && thumbs[gi]) {
+        thumbs[gi].src = PHOTO_OVERRIDES[key];
+        // First thumb also updates main image
+        if (gi === 0 && mainImg) mainImg.src = PHOTO_OVERRIDES[key];
       }
     });
   });
@@ -964,7 +990,7 @@ function buildGallery(stop, si) {
   return '<div class="gallery-strip">' +
     stop.gallery.map(function(g, gi) {
       return '<img class="g-thumb'+(gi===0?' active':'')+'" src="'+g+'" loading="lazy" alt="" ' +
-        'onclick="switchImg('+si+',\''+g+'\',this)">';
+        'onclick="switchImg('+si+',this)">';
     }).join('') + '</div>';
 }
 
@@ -1039,7 +1065,10 @@ function buildStop(stop, si) {
       '<div class="stop-sub reveal">'+stop.sub+'</div>' +
       '<div class="stop-divider"></div>' +
       '<p class="stop-desc reveal">'+stop.desc+'</p>' +
-      '<div class="hist-box reveal"><div class="hist-label">📜 Contexto Histórico</div><div class="hist-text">'+stop.hist+'</div></div>' +
+      '<button class="read-btn" onclick="readText(this, \'desc-'+si+'\')"><span class="rb-play">🔊</span><span class="rb-wave">■</span> Leer</button>' +
+      '<div id="read-src-desc-'+si+'" style="display:none">'+stop.desc+'</div>' +
+      '<div class="hist-box reveal"><div class="hist-label">📜 Contexto Histórico</div><div class="hist-text" id="read-src-hist-'+si+'">'+stop.hist+'</div></div>' +
+      '<button class="read-btn" onclick="readText(this, \'hist-'+si+'\')"><span class="rb-play">🔊</span><span class="rb-wave">■</span> Leer historia</button>' +
       buildFacts(stop.facts) +
       buildDishes(stop.dishes) +
       buildAudio(stop, si) +
@@ -1123,9 +1152,13 @@ function jumpTo(fromSi, toSi) {
   goTo(STOPS[toSi].id);
 }
 
-function switchImg(si, src, thumb) {
+function switchImg(si, thumb) {
+  // Always read src from the thumb element — works whether overridden by GitHub or default
+  var src = thumb.src;
   var img = document.getElementById('main-img-'+si);
   img.src = src;
+  // Also update the lightbox click target
+  img.onclick = function() { openLB(src); };
   var panel = document.getElementById(STOPS[si].id).querySelector('.stop-img-panel');
   panel.querySelectorAll('.g-thumb').forEach(function(t){ t.classList.remove('active'); });
   thumb.classList.add('active');
@@ -1273,108 +1306,165 @@ async function generateDetail(stop) {
 
 
 
+// ── GLOBAL READ-ALOUD ENGINE ────────────────────────────────────────────────
+var readSynth = window.speechSynthesis;
+var readState = { utter: null, status: 'idle', btn: null };
+
+function getBestVoice() {
+  var voices = readSynth.getVoices();
+  return voices.find(function(v){ return v.lang==='es-ES' && /google/i.test(v.name); })
+    || voices.find(function(v){ return v.lang.startsWith('es-ES'); })
+    || voices.find(function(v){ return v.lang.startsWith('es'); })
+    || null;
+}
+
+function stopReading() {
+  readSynth.cancel();
+  if (readState.btn) {
+    readState.btn.classList.remove('reading');
+    readState.btn.title = '';
+  }
+  readState.status = 'idle';
+  readState.btn = null;
+  readState.utter = null;
+  // Also stop immersive audio
+  immAudioState = 'idle';
+  var ib = document.getElementById('imm-audio-btn');
+  if (ib) { ib.textContent = '▶'; ib.classList.remove('playing'); }
+  setImmWave(false);
+}
+
+// Generic read button toggle — reads text from hidden source element
+function readText(btn, srcId) {
+  // If this button is already reading → stop
+  if (readState.status !== 'idle' && readState.btn === btn) {
+    stopReading();
+    return;
+  }
+  // Stop any other reading
+  stopReading();
+
+  var srcEl = document.getElementById('read-src-' + srcId);
+  var text = srcEl ? srcEl.innerText || srcEl.textContent : '';
+  if (!text.trim()) return;
+
+  startReading(btn, text);
+}
+
+// Read the AI detail panel content
+function toggleDetailRead() {
+  var btn = document.getElementById('detail-read-btn');
+  if (readState.status !== 'idle' && readState.btn === btn) {
+    stopReading();
+    return;
+  }
+  stopReading();
+
+  var body = document.getElementById('detail-body');
+  var text = body ? body.innerText : '';
+  text = text.replace(/Generando contenido con IA[\u2026.]*/g, '').trim();
+  if (!text) return;
+
+  startReading(btn, text);
+}
+
+function startReading(btn, text) {
+  var utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'es-ES';
+  utter.rate = 0.88;
+  utter.pitch = 1.0;
+  var voice = getBestVoice();
+  if (voice) utter.voice = voice;
+
+  utter.onstart = function() {
+    readState.status = 'playing';
+    btn.classList.add('reading');
+  };
+  utter.onend = utter.onerror = function() {
+    readState.status = 'idle';
+    btn.classList.remove('reading');
+    readState.btn = null;
+    readState.utter = null;
+  };
+
+  readState.utter = utter;
+  readState.btn = btn;
+  readState.status = 'playing';
+  btn.classList.add('reading');
+  readSynth.speak(utter);
+}
+
 // ── IMMERSIVE READING MODE ───────────────────────────────────────────────────
 var immersiveStopIdx = -1;
-var immAudioState = 'idle'; // idle | playing | paused
+var immAudioState = 'idle';
+var currentImmersiveStop = -1;
 
 function openImmersive() {
   var panel = document.getElementById('detail-panel');
   if (!panel.classList.contains('open')) return;
-  
-  // Copy content from detail-body to immersive-body
+
+  stopReading(); // stop any ongoing reading
+
   var src = document.getElementById('detail-body').innerHTML;
   document.getElementById('immersive-body').innerHTML = src;
-  document.getElementById('immersive-title').textContent = 
+  document.getElementById('immersive-title').textContent =
     document.getElementById('detail-stop-name').textContent;
-  
+
   document.getElementById('immersive-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
-  immersiveStopIdx = currentImmersiveStop;
 }
 
 function closeImmersive() {
   document.getElementById('immersive-overlay').classList.remove('open');
-  stopImmersiveAudio();
+  stopReading();
 }
 
 function setFontSize(size) {
   var overlay = document.getElementById('immersive-overlay');
   overlay.className = overlay.className.replace(/font-size-\w+/g, '').trim();
   if (size !== 'md') overlay.classList.add('font-size-' + size);
-  document.querySelectorAll('.imm-btn[id^="font-"]').forEach(function(b) {
-    b.classList.remove('active');
+  ['sm','md','lg'].forEach(function(s) {
+    var el = document.getElementById('font-' + s);
+    if (el) el.classList.toggle('active', s === size);
   });
-  document.getElementById('font-' + size).classList.add('active');
 }
 
-// Immersive audio - reads the full narrative text
+// Immersive audio: reads the immersive body text
 function toggleImmersiveAudio() {
-  var synth = window.speechSynthesis;
   var btn = document.getElementById('imm-audio-btn');
-  
+
   if (immAudioState === 'playing') {
-    synth.pause();
+    readSynth.pause();
     immAudioState = 'paused';
-    btn.textContent = '▶';
-    btn.classList.remove('playing');
-    setImmWave(false);
-    document.getElementById('imm-audio-status').textContent = 'En pausa — pulsa para continuar';
+    btn.textContent = '▶'; btn.classList.remove('playing'); setImmWave(false);
+    document.getElementById('imm-audio-status').textContent = 'En pausa';
     return;
   }
   if (immAudioState === 'paused') {
-    synth.resume();
-    immAudioState = 'playing';
-    btn.textContent = '⏸';
-    btn.classList.add('playing');
-    setImmWave(true);
-    document.getElementById('imm-audio-status').textContent = 'Reproduciendo narración…';
-    return;
-  }
-  
-  // Fresh start — extract text from immersive body
-  synth.cancel();
-  var body = document.getElementById('immersive-body');
-  var rawText = body ? body.innerText : '';
-  if (!rawText.trim()) return;
-  
-  // Clean up text (remove section titles repetition, trim)
-  rawText = rawText.replace(/\n{3,}/g, '\n\n').trim();
-  
-  var utter = new SpeechSynthesisUtterance(rawText);
-  utter.lang = 'es-ES';
-  utter.rate = 0.85;
-  utter.pitch = 1.0;
-  
-  var voices = synth.getVoices();
-  var pick = voices.find(function(v){ return v.lang==='es-ES' && /google/i.test(v.name); })
-    || voices.find(function(v){ return v.lang.startsWith('es-ES'); })
-    || voices.find(function(v){ return v.lang.startsWith('es'); });
-  if (pick) utter.voice = pick;
-  
-  utter.onstart = function() {
+    readSynth.resume();
     immAudioState = 'playing';
     btn.textContent = '⏸'; btn.classList.add('playing'); setImmWave(true);
-    document.getElementById('imm-audio-status').textContent = 'Reproduciendo narración…';
-  };
-  utter.onpause = function() {
-    immAudioState = 'paused'; btn.textContent = '▶'; btn.classList.remove('playing'); setImmWave(false);
-  };
-  utter.onresume = function() {
-    immAudioState = 'playing'; btn.textContent = '⏸'; btn.classList.add('playing'); setImmWave(true);
-  };
-  utter.onend = utter.onerror = function() {
-    immAudioState = 'idle'; btn.textContent = '▶'; btn.classList.remove('playing'); setImmWave(false);
-    document.getElementById('imm-audio-status').textContent = 'Narración completada';
-  };
-  synth.speak(utter);
-}
+    document.getElementById('imm-audio-status').textContent = 'Reproduciendo…';
+    return;
+  }
 
-function stopImmersiveAudio() {
-  window.speechSynthesis.cancel();
-  immAudioState = 'idle';
-  var btn = document.getElementById('imm-audio-btn');
-  if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
-  setImmWave(false);
+  readSynth.cancel();
+  var body = document.getElementById('immersive-body');
+  var text = body ? body.innerText : '';
+  text = text.replace(/Generando contenido[^\n]*/g, '').trim();
+  if (!text) return;
+
+  var utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'es-ES'; utter.rate = 0.85; utter.pitch = 1.0;
+  var voice = getBestVoice();
+  if (voice) utter.voice = voice;
+
+  utter.onstart = function() { immAudioState='playing'; btn.textContent='⏸'; btn.classList.add('playing'); setImmWave(true); document.getElementById('imm-audio-status').textContent='Reproduciendo…'; };
+  utter.onpause = function() { immAudioState='paused'; btn.textContent='▶'; btn.classList.remove('playing'); setImmWave(false); };
+  utter.onresume = function() { immAudioState='playing'; btn.textContent='⏸'; btn.classList.add('playing'); setImmWave(true); };
+  utter.onend = utter.onerror = function() { immAudioState='idle'; btn.textContent='▶'; btn.classList.remove('playing'); setImmWave(false); document.getElementById('imm-audio-status').textContent='Narración completada'; };
+
+  readSynth.speak(utter);
 }
 
 function setImmWave(on) {
@@ -1383,8 +1473,6 @@ function setImmWave(on) {
   });
 }
 
-var currentImmersiveStop = -1;
-// Track which stop is open for immersive
 var _origOpenDetail = openDetail;
 openDetail = async function(si) {
   currentImmersiveStop = si;
