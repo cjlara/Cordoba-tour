@@ -404,70 +404,148 @@ img { display: block; max-width: 100%; }
   font-style: italic; color: var(--parch); opacity: 0.6; font-size: 0.92rem;
   letter-spacing: 0.05em;
 }
-/* Detail content blocks */
-.detail-section { margin-bottom: 2rem; }
+/* ── DETAIL CONTENT — dark theme enforced ─────────────────────────────── */
+#detail-panel *, #detail-body * {
+  color: inherit;
+  background-color: transparent;
+  box-sizing: border-box;
+}
+#detail-body { background: var(--ink); }
+
+.detail-section {
+  margin-bottom: 2.5rem;
+  background: transparent !important;
+  color: var(--parch) !important;
+}
 .detail-section-title {
-  font-family: var(--display); font-size: 1.3rem; color: var(--gold);
-  margin-bottom: 0.8rem; padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--border);
+  font-family: var(--display) !important;
+  font-size: 1.25rem !important;
+  color: var(--gold) !important;
+  background: rgba(201,168,76,0.08) !important;
+  border-left: 3px solid var(--gold) !important;
+  padding: 0.6rem 1rem !important;
+  margin-bottom: 1.2rem !important;
+  display: block !important;
 }
 .detail-text {
-  font-size: 0.97rem; line-height: 1.95; color: var(--parch); font-weight: 300;
+  font-size: 1rem !important;
+  line-height: 2 !important;
+  color: var(--parch) !important;
+  font-weight: 300 !important;
+  background: transparent !important;
 }
-.detail-text p { margin-bottom: 1rem; }
-.detail-text p:last-child { margin-bottom: 0; }
-/* Anecdote card */
+.detail-text p {
+  margin-bottom: 1.1rem !important;
+  color: var(--parch) !important;
+  background: transparent !important;
+}
+/* Anecdote */
 .anecdote-card {
-  background: rgba(201,168,76,0.06); border: 1px solid var(--border);
-  border-left: 3px solid var(--gold); padding: 1.1rem 1.3rem; margin: 1.2rem 0;
-  position: relative;
-}
-.anecdote-card::before {
-  content: '"'; position: absolute; top: -0.3rem; left: 0.8rem;
-  font-family: var(--display); font-size: 3rem; color: var(--gold); opacity: 0.25;
-  line-height: 1;
+  background: rgba(201,168,76,0.05) !important;
+  border: 1px solid rgba(201,168,76,0.2) !important;
+  border-left: 3px solid var(--gold) !important;
+  padding: 1.1rem 1.3rem !important;
+  margin: 1rem 0 !important;
+  position: relative !important;
 }
 .anecdote-title {
-  font-size: 0.68rem; letter-spacing: 0.35em; text-transform: uppercase;
-  color: var(--gold); margin-bottom: 0.5rem;
+  font-size: 0.65rem !important; letter-spacing: 0.35em !important;
+  text-transform: uppercase !important; color: var(--gold) !important;
+  margin-bottom: 0.5rem !important; display: block !important;
 }
 .anecdote-text {
-  font-style: italic; font-size: 0.92rem; color: var(--parch); line-height: 1.75;
+  font-style: italic !important; font-size: 0.95rem !important;
+  color: var(--parch) !important; line-height: 1.8 !important;
 }
-/* Infographic / fact boxes */
+/* Infographic */
 .infographic {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; margin: 1.2rem 0;
+  display: grid !important; grid-template-columns: repeat(2,1fr) !important;
+  gap: 0.8rem !important; margin: 1rem 0 !important;
 }
 .info-box {
-  background: var(--card); border: 1px solid var(--border); padding: 1rem;
-  text-align: center;
+  background: var(--card) !important; border: 1px solid var(--border) !important;
+  padding: 1rem !important; text-align: center !important;
 }
-.info-box-icon { font-size: 1.6rem; display: block; margin-bottom: 0.3rem; }
+.info-box-icon { font-size: 1.5rem !important; display: block !important; margin-bottom: 0.3rem !important; }
 .info-box-val {
-  font-family: var(--display); font-size: 1.4rem; color: var(--gold); display: block;
+  font-family: var(--display) !important; font-size: 1.35rem !important;
+  color: var(--gold) !important; display: block !important;
 }
 .info-box-lbl {
-  font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--parch); opacity: 0.52; margin-top: 0.1rem;
+  font-size: 0.63rem !important; letter-spacing: 0.18em !important;
+  text-transform: uppercase !important; color: var(--parch) !important;
+  opacity: 0.55 !important; margin-top: 0.15rem !important;
 }
 /* Timeline */
-.timeline { display: flex; flex-direction: column; gap: 0; margin: 0.8rem 0; }
-.tl-item { display: flex; gap: 1rem; position: relative; padding-bottom: 1.2rem; }
-.tl-item:last-child { padding-bottom: 0; }
-.tl-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 3rem; }
-.tl-year {
-  font-family: var(--display); font-size: 0.78rem; color: var(--gold);
-  text-align: center; line-height: 1.2;
+.timeline { display: flex !important; flex-direction: column !important; gap: 0 !important; margin: 0.8rem 0 !important; }
+.tl-item { display: flex !important; gap: 1rem !important; padding-bottom: 1.2rem !important; }
+.tl-item:last-child { padding-bottom: 0 !important; }
+.tl-left { display: flex !important; flex-direction: column !important; align-items: center !important; flex-shrink: 0 !important; width: 3rem !important; }
+.tl-year { font-family: var(--display) !important; font-size: 0.75rem !important; color: var(--gold) !important; text-align: center !important; line-height: 1.2 !important; }
+.tl-dot { width: 8px !important; height: 8px !important; border-radius: 50% !important; background: var(--gold) !important; flex-shrink: 0 !important; margin: 0.4rem auto 0 !important; }
+.tl-line { width: 1px !important; flex: 1 !important; background: var(--border) !important; margin-top: 0.3rem !important; min-height: 1rem !important; }
+.tl-content { padding-top: 0.1rem !important; }
+.tl-event { font-size: 0.9rem !important; color: var(--ivory) !important; line-height: 1.5 !important; }
+.tl-detail { font-size: 0.78rem !important; color: var(--parch) !important; opacity: 0.65 !important; font-style: italic !important; margin-top: 0.2rem !important; }
+
+/* ── IMMERSIVE READING MODE ─────────────────────────────────────────────── */
+#immersive-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  background: #080810;
+  display: none; flex-direction: column;
+  overflow: hidden;
 }
-.tl-line { width: 1px; flex: 1; background: var(--border); margin-top: 0.3rem; }
-.tl-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--gold); border: 2px solid var(--ink);
-  flex-shrink: 0; margin: 0.3rem auto 0;
+#immersive-overlay.open { display: flex; }
+#immersive-toolbar {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.9rem 1.4rem; border-bottom: 1px solid rgba(201,168,76,0.12);
+  flex-shrink: 0; background: #080810;
 }
-.tl-content { padding-top: 0.1rem; }
-.tl-event { font-size: 0.88rem; color: var(--ivory); line-height: 1.5; }
-.tl-detail { font-size: 0.78rem; color: var(--parch); opacity: 0.6; font-style: italic; margin-top: 0.2rem; }
+#immersive-title { font-family: var(--display); font-size: 1rem; color: var(--gold); flex: 1; }
+.imm-btn {
+  background: transparent; border: 1px solid var(--border); color: var(--parch);
+  font-family: var(--serif); font-size: 0.75rem; letter-spacing: 0.12em;
+  padding: 0.35rem 0.8rem; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.imm-btn:hover { border-color: var(--gold); color: var(--gold); }
+.imm-btn.active { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+#immersive-body {
+  flex: 1; overflow-y: auto; padding: 3rem 2rem;
+  max-width: 680px; margin: 0 auto; width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+#immersive-body p, #immersive-body .detail-text {
+  font-size: 1.2rem !important; line-height: 2.1 !important;
+  color: #d4c8a8 !important; font-weight: 300 !important;
+  letter-spacing: 0.01em !important;
+}
+#immersive-body .detail-section-title {
+  font-size: 1.5rem !important;
+}
+.font-size-sm #immersive-body p, .font-size-sm #immersive-body .detail-text { font-size: 1rem !important; }
+.font-size-lg #immersive-body p, .font-size-lg #immersive-body .detail-text { font-size: 1.4rem !important; }
+/* Audio bar in immersive */
+#imm-audio-bar {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.8rem 1.4rem; border-top: 1px solid rgba(201,168,76,0.12);
+  background: #080810; flex-shrink: 0;
+}
+#imm-audio-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--gold); background: transparent; color: var(--gold);
+  font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.25s; flex-shrink: 0;
+}
+#imm-audio-btn:hover, #imm-audio-btn.playing { background: var(--gold); color: var(--ink); }
+#imm-audio-info { flex: 1; font-size: 0.8rem; color: var(--parch); opacity: 0.6; font-style: italic; }
+.imm-waveform { display: flex; align-items: center; gap: 2px; height: 16px; margin-top: 0.2rem; }
+.imm-wbar { width: 2px; height: 3px; background: var(--gold); border-radius: 1px; opacity: 0.3; }
+.imm-wbar.on { opacity: 1; animation: wave 0.8s ease-in-out infinite; }
+.imm-wbar.on:nth-child(2){animation-delay:.08s}.imm-wbar.on:nth-child(3){animation-delay:.16s}
+.imm-wbar.on:nth-child(4){animation-delay:.12s}.imm-wbar.on:nth-child(5){animation-delay:.04s}
+.imm-wbar.on:nth-child(6){animation-delay:.2s}.imm-wbar.on:nth-child(7){animation-delay:.08s}
+.imm-wbar.on:nth-child(8){animation-delay:.24s}
+
 /* Open detail button */
 .btn-detail {
   display: inline-flex; align-items: center; gap: 0.5rem;
@@ -477,6 +555,7 @@ img { display: block; max-width: 100%; }
   transition: all 0.25s; font-family: var(--serif);
 }
 .btn-detail:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
+
 
 </style>
 </head>
@@ -558,14 +637,38 @@ img { display: block; max-width: 100%; }
 <!-- ── DETAIL PANEL ──────────────────────────────────────────────────────── -->
 <div id="detail-panel">
   <div id="detail-header">
-    <button id="detail-close" onclick="closeDetail()">✕</button>
-    <div id="detail-stop-name">Detalle</div>
-    <div style="font-size:0.7rem;letter-spacing:0.2em;color:var(--gold);opacity:0.7;text-transform:uppercase">Explorar</div>
+    <button id="detail-close" onclick="closeDetail()" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--parch);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    <div id="detail-stop-name" style="font-family:var(--display);font-size:1rem;color:var(--ivory);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+    <button onclick="openImmersive()" style="background:transparent;border:1px solid rgba(201,168,76,0.4);color:var(--gold);font-family:var(--serif);font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;padding:0.35rem 0.8rem;cursor:pointer;white-space:nowrap;">📖 Lectura</button>
   </div>
   <div id="detail-body">
     <div class="detail-loading">
       <div class="detail-spinner"></div>
       <div class="detail-loading-txt">Generando contenido con IA…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── IMMERSIVE READING OVERLAY ──────────────────────────────────────────── -->
+<div id="immersive-overlay">
+  <div id="immersive-toolbar">
+    <button class="imm-btn" onclick="closeImmersive()">✕ Salir</button>
+    <div id="immersive-title">Lectura inmersiva</div>
+    <button class="imm-btn" id="font-sm" onclick="setFontSize('sm')">A−</button>
+    <button class="imm-btn active" id="font-md" onclick="setFontSize('md')">A</button>
+    <button class="imm-btn" id="font-lg" onclick="setFontSize('lg')">A+</button>
+  </div>
+  <div id="immersive-body"></div>
+  <div id="imm-audio-bar">
+    <button id="imm-audio-btn" onclick="toggleImmersiveAudio()">▶</button>
+    <div id="imm-audio-info">
+      <div style="font-size:0.72rem;letter-spacing:0.15em;color:var(--gold);text-transform:uppercase;">🎧 Narración inmersiva</div>
+      <div id="imm-audio-status">Pulsa ▶ para escuchar mientras lees</div>
+      <div class="imm-waveform" id="imm-wave">
+        <div class="imm-wbar"></div><div class="imm-wbar"></div><div class="imm-wbar"></div>
+        <div class="imm-wbar"></div><div class="imm-wbar"></div><div class="imm-wbar"></div>
+        <div class="imm-wbar"></div><div class="imm-wbar"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1167,6 +1270,126 @@ async function generateDetail(stop) {
   text = text.replace(/^```html\n?/i, '').replace(/^```\n?/i, '').replace(/```$/m, '').trim();
   return text;
 }
+
+
+
+// ── IMMERSIVE READING MODE ───────────────────────────────────────────────────
+var immersiveStopIdx = -1;
+var immAudioState = 'idle'; // idle | playing | paused
+
+function openImmersive() {
+  var panel = document.getElementById('detail-panel');
+  if (!panel.classList.contains('open')) return;
+  
+  // Copy content from detail-body to immersive-body
+  var src = document.getElementById('detail-body').innerHTML;
+  document.getElementById('immersive-body').innerHTML = src;
+  document.getElementById('immersive-title').textContent = 
+    document.getElementById('detail-stop-name').textContent;
+  
+  document.getElementById('immersive-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  immersiveStopIdx = currentImmersiveStop;
+}
+
+function closeImmersive() {
+  document.getElementById('immersive-overlay').classList.remove('open');
+  stopImmersiveAudio();
+}
+
+function setFontSize(size) {
+  var overlay = document.getElementById('immersive-overlay');
+  overlay.className = overlay.className.replace(/font-size-\w+/g, '').trim();
+  if (size !== 'md') overlay.classList.add('font-size-' + size);
+  document.querySelectorAll('.imm-btn[id^="font-"]').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  document.getElementById('font-' + size).classList.add('active');
+}
+
+// Immersive audio - reads the full narrative text
+function toggleImmersiveAudio() {
+  var synth = window.speechSynthesis;
+  var btn = document.getElementById('imm-audio-btn');
+  
+  if (immAudioState === 'playing') {
+    synth.pause();
+    immAudioState = 'paused';
+    btn.textContent = '▶';
+    btn.classList.remove('playing');
+    setImmWave(false);
+    document.getElementById('imm-audio-status').textContent = 'En pausa — pulsa para continuar';
+    return;
+  }
+  if (immAudioState === 'paused') {
+    synth.resume();
+    immAudioState = 'playing';
+    btn.textContent = '⏸';
+    btn.classList.add('playing');
+    setImmWave(true);
+    document.getElementById('imm-audio-status').textContent = 'Reproduciendo narración…';
+    return;
+  }
+  
+  // Fresh start — extract text from immersive body
+  synth.cancel();
+  var body = document.getElementById('immersive-body');
+  var rawText = body ? body.innerText : '';
+  if (!rawText.trim()) return;
+  
+  // Clean up text (remove section titles repetition, trim)
+  rawText = rawText.replace(/\n{3,}/g, '\n\n').trim();
+  
+  var utter = new SpeechSynthesisUtterance(rawText);
+  utter.lang = 'es-ES';
+  utter.rate = 0.85;
+  utter.pitch = 1.0;
+  
+  var voices = synth.getVoices();
+  var pick = voices.find(function(v){ return v.lang==='es-ES' && /google/i.test(v.name); })
+    || voices.find(function(v){ return v.lang.startsWith('es-ES'); })
+    || voices.find(function(v){ return v.lang.startsWith('es'); });
+  if (pick) utter.voice = pick;
+  
+  utter.onstart = function() {
+    immAudioState = 'playing';
+    btn.textContent = '⏸'; btn.classList.add('playing'); setImmWave(true);
+    document.getElementById('imm-audio-status').textContent = 'Reproduciendo narración…';
+  };
+  utter.onpause = function() {
+    immAudioState = 'paused'; btn.textContent = '▶'; btn.classList.remove('playing'); setImmWave(false);
+  };
+  utter.onresume = function() {
+    immAudioState = 'playing'; btn.textContent = '⏸'; btn.classList.add('playing'); setImmWave(true);
+  };
+  utter.onend = utter.onerror = function() {
+    immAudioState = 'idle'; btn.textContent = '▶'; btn.classList.remove('playing'); setImmWave(false);
+    document.getElementById('imm-audio-status').textContent = 'Narración completada';
+  };
+  synth.speak(utter);
+}
+
+function stopImmersiveAudio() {
+  window.speechSynthesis.cancel();
+  immAudioState = 'idle';
+  var btn = document.getElementById('imm-audio-btn');
+  if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+  setImmWave(false);
+}
+
+function setImmWave(on) {
+  document.querySelectorAll('.imm-wbar').forEach(function(b){
+    on ? b.classList.add('on') : b.classList.remove('on');
+  });
+}
+
+var currentImmersiveStop = -1;
+// Track which stop is open for immersive
+var _origOpenDetail = openDetail;
+openDetail = async function(si) {
+  currentImmersiveStop = si;
+  return _origOpenDetail(si);
+};
 
 </script>
 </body>
